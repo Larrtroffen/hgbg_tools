@@ -44,9 +44,9 @@ export const usePostStore = defineStore(`post`, () => {
   // 当前文章 ID
   const currentPostId = store.reactive(addPrefix(`current_post_id`), ``)
 
-  // 在补齐 id 后，若 currentPostId 无效 ➜ 自动指向第一篇
-  onBeforeMount(() => {
-    posts.value = posts.value.map((post, index) => {
+  // 补齐 id 并规范化
+  function normalizePosts(list: Post[]) {
+    return list.map((post, index) => {
       const now = Date.now()
       return {
         ...post,
@@ -55,12 +55,29 @@ export const usePostStore = defineStore(`post`, () => {
         updateDatetime: post.updateDatetime ?? new Date(now + index),
       }
     })
+  }
 
-    // 兼容：如果本地没有 currentPostId，或指向的文章已不存在
+  // 校验 currentPostId 是否在 posts 中，无效则指向第一篇
+  function ensureCurrentPostId() {
     if (!currentPostId.value || !posts.value.some(p => p.id === currentPostId.value)) {
       currentPostId.value = posts.value[0]?.id ?? ``
     }
+  }
+
+  // 挂载前：用当前 posts 做一次规范化并校验 currentPostId
+  onBeforeMount(() => {
+    posts.value = normalizePosts(posts.value)
+    ensureCurrentPostId()
   })
+
+  // 远程存储：posts 从 API 拉取完成后会替换为远程数据，需重新校验 currentPostId（否则仍指向默认文章的 id）
+  watch(
+    posts,
+    () => {
+      ensureCurrentPostId()
+    },
+    { deep: false },
+  )
 
   // 根据 id 找索引
   const findIndexById = (id: string) => posts.value.findIndex(p => p.id === id)
