@@ -1,4 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { Buffer } from 'node:buffer'
+import process from 'node:process'
 import busboy from 'busboy'
 
 export const config = {
@@ -12,14 +14,14 @@ function getBaseUrl(): string {
   return u || 'https://api.dify.ai/v1'
 }
 
-function parseMultipartFile(req: VercelRequest): Promise<{ buffer: Buffer; filename: string; mimeType: string }> {
+function parseMultipartFile(req: VercelRequest): Promise<{ buffer: Buffer, filename: string, mimeType: string }> {
   return new Promise((resolve, reject) => {
     let resolved = false
     const chunks: Buffer[] = []
     let filename = 'upload'
     let mimeType = 'application/octet-stream'
     const bb = busboy({ headers: (req as any).headers })
-    bb.on('file', (_field: string, file: NodeJS.ReadableStream, info: { filename?: string; mimeType?: string }) => {
+    bb.on('file', (_field: string, file: NodeJS.ReadableStream, info: { filename?: string, mimeType?: string }) => {
       if (resolved)
         return
       filename = info.filename || filename
@@ -35,14 +37,14 @@ function parseMultipartFile(req: VercelRequest): Promise<{ buffer: Buffer; filen
           mimeType,
         })
       })
-      file.on('error', err => {
+      file.on('error', (err) => {
         if (!resolved) {
           resolved = true
           reject(err)
         }
       })
     })
-    bb.on('error', err => {
+    bb.on('error', (err) => {
       if (!resolved) {
         resolved = true
         reject(err)

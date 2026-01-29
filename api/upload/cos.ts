@@ -1,4 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { Buffer } from 'node:buffer'
+import process from 'node:process'
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import busboy from 'busboy'
 
@@ -22,14 +24,14 @@ function getDateFilename(filename: string): string {
   return `${dir}/${ts}-${id}.${ext}`
 }
 
-function parseMultipartFile(req: VercelRequest): Promise<{ buffer: Buffer; filename: string; mimeType: string }> {
+function parseMultipartFile(req: VercelRequest): Promise<{ buffer: Buffer, filename: string, mimeType: string }> {
   return new Promise((resolve, reject) => {
     let resolved = false
     const chunks: Buffer[] = []
     let filename = 'upload'
     let mimeType = 'application/octet-stream'
     const bb = busboy({ headers: (req as any).headers })
-    bb.on('file', (_field: string, file: NodeJS.ReadableStream, info: { filename?: string; mimeType?: string }) => {
+    bb.on('file', (_field: string, file: NodeJS.ReadableStream, info: { filename?: string, mimeType?: string }) => {
       if (resolved)
         return
       filename = info.filename || filename
@@ -45,14 +47,14 @@ function parseMultipartFile(req: VercelRequest): Promise<{ buffer: Buffer; filen
           mimeType,
         })
       })
-      file.on('error', err => {
+      file.on('error', (err) => {
         if (!resolved) {
           resolved = true
           reject(err)
         }
       })
     })
-    bb.on('error', err => {
+    bb.on('error', (err) => {
       if (!resolved) {
         resolved = true
         reject(err)
@@ -113,7 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const cdnHost = process.env.TENCENT_COS_CDN_HOST || ''
     if (cdnHost) {
-      const url = cdnHost.replace(/\/$/, '') + '/' + key
+      const url = `${cdnHost.replace(/\/$/, '')}/${key}`
       return res.status(200).json({ url })
     }
     const url = `https://${bucket}.cos.${region}.myqcloud.com/${key}`

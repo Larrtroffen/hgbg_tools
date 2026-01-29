@@ -14,4 +14,10 @@ export default antfu({
     'ts/no-namespace': `off`,
     'style/max-statements-per-line': `off`,
   },
+}, {
+  files: [`api/**/*.ts`],
+  rules: {
+    'node/prefer-global/process': `off`,
+    'node/prefer-global/buffer': `off`,
+  },
 })
