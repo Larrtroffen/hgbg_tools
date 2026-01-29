@@ -111,7 +111,23 @@ export class RestfulStorageEngine implements StorageEngine {
       throw new Error(`Storage API error: ${response.statusText}`)
     }
 
-    return response.json()
+    const text = await response.text()
+    if (!text || !text.trim()) {
+      console.warn('[MD Storage] RestfulStorageEngine.request: empty body', method, url)
+      return {}
+    }
+    const first = text.trimStart()[0]
+    if (first !== '{' && first !== '[') {
+      console.warn('[MD Storage] RestfulStorageEngine.request: body is not JSON (starts with)', JSON.stringify(text.slice(0, 120)), method, url)
+      throw new Error(`Storage API returned non-JSON (likely HTML): ${text.slice(0, 80)}`)
+    }
+    try {
+      return JSON.parse(text) as any
+    }
+    catch (e) {
+      console.warn('[MD Storage] RestfulStorageEngine.request: JSON.parse failed', text.slice(0, 200), method, url)
+      throw e
+    }
   }
 
   async get(key: string): Promise<string | null> {
