@@ -2,6 +2,12 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { redis } from './redis'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!redis) {
+    return res.status(503).json({
+      error: 'Storage not configured',
+      hint: 'Add KV_REST_API_URL and KV_REST_API_TOKEN (or UPSTASH_REDIS_REST_*) to this environment in Vercel',
+    })
+  }
   if (req.method === 'POST') {
     const key = req.body?.key as string
     if (!key || typeof key !== 'string') {
