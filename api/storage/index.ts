@@ -8,8 +8,24 @@ const redis = new Redis({
 })
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'POST') {
+    const key = req.body?.key as string
+    if (!key || typeof key !== 'string') {
+      return res.status(400).json({ error: 'Missing key' })
+    }
+    const value = typeof req.body?.value === 'string' ? req.body.value : (req.body?.value != null ? JSON.stringify(req.body.value) : '')
+    try {
+      await redis.set(key, value)
+      return res.status(200).json({ ok: true })
+    }
+    catch (error) {
+      console.error('[storage/set]', error)
+      return res.status(500).json({ error: 'Storage error' })
+    }
+  }
+
   if (req.method !== 'DELETE') {
-    res.setHeader('Allow', 'DELETE')
+    res.setHeader('Allow', 'POST, DELETE')
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
