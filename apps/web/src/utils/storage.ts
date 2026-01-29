@@ -270,8 +270,11 @@ class StorageManager {
 
     const data = ref<T>(initialValue) as Ref<T>
 
-    // 非 LocalStorageEngine 异步加载
-    if (!(this.engine instanceof LocalStorageEngine)) {
+    // 远程引擎：首次拉取完成前禁止保存，避免用默认值覆盖服务端（如刷新时 onBeforeMount 触发的规范化）
+    const isLocal = this.engine instanceof LocalStorageEngine
+    let initialLoadDone = isLocal
+
+    if (!isLocal) {
       const loadAsync = isStringType
         ? this.get(key).then(value => value !== null ? (value as T) : null)
         : this.getJSON<T>(key, defaultValue)
@@ -280,15 +283,17 @@ class StorageManager {
         if (value !== null) {
           data.value = value
         }
+        initialLoadDone = true
       })
     }
 
-    // 监听变化并自动保存
-    // 使用 Promise.resolve() 确保在下一个微任务中设置 watch，避免初始赋值触发保存
+    // 监听变化并自动保存（远程引擎：仅当 initialLoadDone 后才保存）
     Promise.resolve().then(() => {
       watch(
         data,
         (newValue) => {
+          if (!initialLoadDone)
+            return
           const savePromise = isStringType
             ? this.set(key, newValue as string)
             : this.setJSON(key, newValue)
