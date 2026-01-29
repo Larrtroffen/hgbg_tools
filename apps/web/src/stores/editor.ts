@@ -1,11 +1,25 @@
 import type { EditorView } from '@codemirror/view'
+import type { Ref } from 'vue'
 import { formatDoc } from '@/utils'
+
+/** 编辑器 Store 返回类型（显式声明以避免 TS4023 泄漏 @codemirror/view 内部类型） */
+interface EditorStoreReturn {
+  editor: Ref<EditorView | null>
+  formatContent: () => Promise<string | undefined>
+  importContent: (content: string) => void
+  clearContent: () => void
+  getContent: () => string
+  getSelection: () => string
+  replaceSelection: (text: string) => void
+  insertAtCursor: (text: string) => void
+  insertAtStart: (text: string) => void
+}
 
 /**
  * 编辑器 Store
  * 负责管理 CodeMirror 编辑器实例和基础操作
  */
-export const useEditorStore = defineStore(`editor`, () => {
+export const useEditorStore = defineStore(`editor`, (): EditorStoreReturn => {
   // 内容编辑器实例
   const editor = ref<EditorView | null>(null)
 
@@ -98,5 +112,5 @@ export const useEditorStore = defineStore(`editor`, () => {
     replaceSelection,
     insertAtCursor,
     insertAtStart,
-  }
+  } as EditorStoreReturn
 })

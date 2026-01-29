@@ -1,4 +1,5 @@
 import type { EditorView } from '@codemirror/view'
+import type { Ref } from 'vue'
 import { Compartment, EditorState } from '@codemirror/state'
 import { EditorView as CMEditorView } from '@codemirror/view'
 import { cssSetup, DEFAULT_CUSTOM_THEME, theme as editorTheme } from '@md/shared'
@@ -19,11 +20,28 @@ export interface CssContentConfig {
   }[]
 }
 
+/** CSS 编辑器 Store 返回类型（显式声明以避免 TS4023 泄漏 @codemirror/view 内部类型） */
+interface CssEditorStoreReturn {
+  cssEditor: Ref<EditorView | null>
+  cssContentConfig: Ref<CssContentConfig>
+  getCurrentTab: () => { title: string, name: string, content: string }
+  getCurrentTabContent: () => string
+  setCssEditorValue: (content: string) => void
+  setOnTabChangedCallback: (callback: (content: string) => void) => void
+  tabChanged: (name: string) => void
+  renameTab: (name: string) => void
+  addCssContentTab: (name: string, initialContent?: string) => void
+  validatorTabName: (val: string) => boolean
+  resetCssConfig: () => void
+  initCssEditor: (onUpdate: (content: string) => void) => void
+  scrollToHeading: (level: string) => void
+}
+
 /**
  * CSS 编辑器 Store
  * 负责管理自定义 CSS 编辑器及其配置
  */
-export const useCssEditorStore = defineStore(`cssEditor`, () => {
+export const useCssEditorStore = defineStore(`cssEditor`, (): CssEditorStoreReturn => {
   const isDark = useDark()
 
   // CSS 编辑器实例
@@ -256,5 +274,5 @@ export const useCssEditorStore = defineStore(`cssEditor`, () => {
     resetCssConfig,
     initCssEditor,
     scrollToHeading,
-  }
+  } as CssEditorStoreReturn
 })
