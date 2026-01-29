@@ -13,9 +13,12 @@ import 'vue-sonner/style.css'
 import '@/assets/index.css'
 import '@/assets/less/theme.less'
 
-const useRemoteStorage = import.meta.env.VITE_USE_REMOTE_STORAGE === 'true'
+const envRemote = import.meta.env.VITE_USE_REMOTE_STORAGE
+const useRemoteStorage = envRemote === 'true'
+console.warn('[MD Storage] main.ts: VITE_USE_REMOTE_STORAGE =', JSON.stringify(envRemote), '→ useRemoteStorage =', useRemoteStorage)
 if (useRemoteStorage) {
   store.setEngine(new RestfulStorageEngine(`${window.location.origin}/api`))
+  console.warn('[MD Storage] main.ts: RestfulStorageEngine set, baseURL =', `${window.location.origin}/api`)
 }
 
 // 异步初始化 mermaid，避免初始化顺序问题
@@ -26,19 +29,29 @@ setupComponents()
 const app = createApp(App)
 app.use(createPinia())
 
-// 远程存储：在挂载前先发 GET 拉取数据，刷新时网络里一定能看到 GET
 async function bootstrap() {
+  console.warn('[MD Storage] bootstrap() started, useRemoteStorage =', useRemoteStorage)
   if (!useRemoteStorage) {
+    console.warn('[MD Storage] bootstrap: skip preload (not remote), mounting app')
     app.mount(`#app`)
     return
   }
+  const postsKey = addPrefix('posts')
+  const currentIdKey = addPrefix('current_post_id')
+  console.warn('[MD Storage] bootstrap: preload GET for keys', postsKey, currentIdKey)
   const timeout = new Promise<void>(r => setTimeout(r, 8000))
   const load = Promise.all([
-    store.getJSON(addPrefix('posts'), []),
-    store.get(addPrefix('current_post_id')),
-  ]).then(() => {})
+    store.getJSON(postsKey, []),
+    store.get(currentIdKey),
+  ]).then(() => {
+    console.warn('[MD Storage] bootstrap: preload GET promises resolved')
+  })
   await Promise.race([load, timeout])
+  console.warn('[MD Storage] bootstrap: preload done, mounting app')
   app.mount(`#app`)
 }
 
-bootstrap()
+bootstrap().catch((err) => {
+  console.error('[MD Storage] bootstrap failed:', err)
+  app.mount(`#app`)
+})

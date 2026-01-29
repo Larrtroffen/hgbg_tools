@@ -89,6 +89,9 @@ export class RestfulStorageEngine implements StorageEngine {
   ) {}
 
   private async request(method: string, endpoint: string, data?: any): Promise<any> {
+    const url = `${this.baseURL}${endpoint}`
+    console.warn('[MD Storage] RestfulStorageEngine.request:', method, url)
+
     const headers: HeadersInit = {
       'Content-Type': `application/json`,
     }
@@ -98,7 +101,7 @@ export class RestfulStorageEngine implements StorageEngine {
       headers.Authorization = `Bearer ${token}`
     }
 
-    const response = await fetch(`${this.baseURL}${endpoint}`, {
+    const response = await fetch(url, {
       method,
       headers,
       body: data ? JSON.stringify(data) : undefined,
@@ -113,15 +116,18 @@ export class RestfulStorageEngine implements StorageEngine {
 
   async get(key: string): Promise<string | null> {
     try {
+      console.warn('[MD Storage] RestfulStorageEngine.get:', key)
       const result = await this.request(`GET`, `/storage/${encodeURIComponent(key)}`)
       return result.value ?? null
     }
-    catch {
+    catch (e) {
+      console.warn('[MD Storage] RestfulStorageEngine.get failed:', key, e)
       return null
     }
   }
 
   async set(key: string, value: string): Promise<void> {
+    console.warn('[MD Storage] RestfulStorageEngine.set:', key, '(POST /storage)')
     await this.request(`POST`, `/storage`, { key, value })
   }
 
@@ -173,6 +179,8 @@ class StorageManager {
    * 获取字符串值
    */
   async get(key: string): Promise<string | null> {
+    const engineName = this.engine.constructor.name
+    console.warn('[MD Storage] StorageManager.get:', key, 'engine =', engineName)
     return this.engine.get(key)
   }
 
@@ -180,6 +188,7 @@ class StorageManager {
    * 设置字符串值
    */
   async set(key: string, value: string): Promise<void> {
+    console.warn('[MD Storage] StorageManager.set:', key, 'engine =', this.engine.constructor.name)
     return this.engine.set(key, value)
   }
 
@@ -189,6 +198,8 @@ class StorageManager {
   async getJSON<T>(key: string, defaultValue: T): Promise<T>
   async getJSON<T>(key: string): Promise<T | null>
   async getJSON<T>(key: string, defaultValue?: T): Promise<T | null> {
+    const engineName = this.engine.constructor.name
+    console.warn('[MD Storage] StorageManager.getJSON:', key, 'engine =', engineName)
     const value = await this.engine.get(key)
     if (!value) {
       return (defaultValue ?? null) as T | null
@@ -208,6 +219,7 @@ class StorageManager {
    */
   async setJSON<T>(key: string, value: T): Promise<void> {
     try {
+      console.warn('[MD Storage] StorageManager.setJSON:', key, 'engine =', this.engine.constructor.name)
       const jsonString = JSON.stringify(value)
       return this.engine.set(key, jsonString)
     }
