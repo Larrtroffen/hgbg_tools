@@ -15,9 +15,6 @@ import '@/assets/less/theme.less'
 // 使用远程存储时，所有访问者共享同一份数据（需在 Vercel 等环境配置 VITE_USE_REMOTE_STORAGE=true）
 if (import.meta.env.VITE_USE_REMOTE_STORAGE === 'true') {
   store.setEngine(new RestfulStorageEngine(`${window.location.origin}/api`))
-  if (typeof console !== 'undefined' && console.info) {
-    console.info('[MD] 远程存储已启用：本站数据所有人共享并持久化')
-  }
 }
 
 // 异步初始化 mermaid，避免初始化顺序问题

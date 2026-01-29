@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import process from 'node:process'
 import { Redis } from '@upstash/redis'
 
 const redis = new Redis({

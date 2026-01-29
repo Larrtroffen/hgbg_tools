@@ -122,7 +122,7 @@ export class RestfulStorageEngine implements StorageEngine {
   }
 
   async set(key: string, value: string): Promise<void> {
-    await this.request(`PUT`, `/storage/${encodeURIComponent(key)}`, { value })
+    await this.request(`POST`, `/storage/${encodeURIComponent(key)}`, { value })
   }
 
   async remove(key: string): Promise<void> {

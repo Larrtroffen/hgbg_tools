@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import process from 'node:process'
 import { Redis } from '@upstash/redis'
 
 const redis = new Redis({
@@ -27,7 +28,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    case 'PUT': {
+    case 'PUT':
+    case 'POST': {
       const body = req.body
       const value = typeof body?.value === 'string' ? body.value : (body?.value != null ? JSON.stringify(body.value) : '')
       try {
@@ -63,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     default:
-      res.setHeader('Allow', 'GET, PUT, DELETE, HEAD')
+      res.setHeader('Allow', 'GET, PUT, POST, DELETE, HEAD')
       return res.status(405).json({ error: 'Method not allowed' })
   }
 }
