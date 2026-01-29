@@ -37,14 +37,14 @@ function parseMultipartFile(req: VercelRequest): Promise<{ buffer: Buffer, filen
           mimeType,
         })
       })
-      file.on('error', (err) => {
+      file.on('error', (err: Error) => {
         if (!resolved) {
           resolved = true
           reject(err)
         }
       })
     })
-    bb.on('error', (err) => {
+    bb.on('error', (err: Error) => {
       if (!resolved) {
         resolved = true
         reject(err)
@@ -80,7 +80,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const url = `${baseUrl}/files/upload`
 
     const form = new FormData()
-    form.append('file', new Blob([buffer], { type: mimeType }), filename)
+    form.append('file', new Blob([new Uint8Array(buffer)], { type: mimeType }), filename)
     form.append('user', 'md-editor')
 
     const upstream = await fetch(url, {

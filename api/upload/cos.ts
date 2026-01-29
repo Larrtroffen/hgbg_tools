@@ -47,14 +47,14 @@ function parseMultipartFile(req: VercelRequest): Promise<{ buffer: Buffer, filen
           mimeType,
         })
       })
-      file.on('error', (err) => {
+      file.on('error', (err: Error) => {
         if (!resolved) {
           resolved = true
           reject(err)
         }
       })
     })
-    bb.on('error', (err) => {
+    bb.on('error', (err: Error) => {
       if (!resolved) {
         resolved = true
         reject(err)
@@ -104,7 +104,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       forcePathStyle: false,
     })
 
-    await client.send(
+    await (client as { send: (command: PutObjectCommand) => Promise<unknown> }).send(
       new PutObjectCommand({
         Bucket: bucket,
         Key: key,
