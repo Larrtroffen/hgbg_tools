@@ -9,7 +9,7 @@ const editorStore = useEditorStore()
 const cardRef = ref<HTMLElement | null>(null)
 const isExporting = ref(false)
 const exportBtnText = ref('生成并插入 (1100×620)')
-const cardFontFamily = "'Noto Sans SC', sans-serif"
+const cardFontFamily = '\'Noto Sans SC\', sans-serif'
 
 const contactInfoHtml = computed(() => {
   const text = cardState.value.contactInfo ?? ''
@@ -32,15 +32,15 @@ function onAvatarChange(e: Event) {
 }
 
 async function onExport() {
-  if (!cardRef.value) return
+  if (!cardRef.value)
+    return
   isExporting.value = true
   exportBtnText.value = '生成中...'
   try {
     const dataUrl = await toPng(cardRef.value, {
       pixelRatio: 2,
-      backgroundColor: null,
+      backgroundColor: undefined,
       skipFonts: false,
-      fontFetchTimeout: 60000,
     })
     const file = await dataUrlToFile(dataUrl, 'business-card.png')
     const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
@@ -132,22 +132,22 @@ async function onExport() {
               >
             </div>
             <div class="flex-1 text-right" style="line-height: 1.1;">
-              <h1 :style="{ fontSize: cardState.nameSize + 'px', fontFamily: cardFontFamily, fontWeight: 900 }" class="m-0">
+              <h1 :style="{ fontSize: `${cardState.nameSize}px`, fontFamily: cardFontFamily, fontWeight: 900 }" class="m-0">
                 {{ cardState.name }}
               </h1>
-              <h2 :style="{ fontSize: cardState.nicknameSize + 'px', fontFamily: cardFontFamily, fontWeight: 900, marginTop: '10px' }" class="m-0">
+              <h2 :style="{ fontSize: `${cardState.nicknameSize}px`, fontFamily: cardFontFamily, fontWeight: 900, marginTop: '10px' }" class="m-0">
                 {{ cardState.nickname }}
               </h2>
             </div>
           </div>
           <div class="flex flex-col gap-[15px]">
             <div class="flex items-start gap-[15px]">
-              <i class="fa-solid fa-globe shrink-0 mt-1 text-[18px]" style="margin-top: 4px;"></i>
-              <p :style="{ fontSize: cardState.contactInfoSize + 'px', lineHeight: '1.6', fontFamily: cardFontFamily, fontWeight: 900 }" class="m-0" v-html="contactInfoHtml" />
+              <i class="fa-solid fa-globe shrink-0 mt-1 text-[18px]" style="margin-top: 4px;" />
+              <p :style="{ fontSize: `${cardState.contactInfoSize}px`, lineHeight: '1.6', fontFamily: cardFontFamily, fontWeight: 900 }" class="m-0" v-html="contactInfoHtml" />
             </div>
             <div class="flex items-start gap-[15px]">
-              <i class="fa-solid fa-map-marker-alt shrink-0 mt-1 text-[18px]" style="margin-top: 4px;"></i>
-              <p :style="{ fontSize: cardState.affiliationSize + 'px', lineHeight: '1.6', fontFamily: cardFontFamily, fontWeight: 900 }" class="m-0">
+              <i class="fa-solid fa-map-marker-alt shrink-0 mt-1 text-[18px]" style="margin-top: 4px;" />
+              <p :style="{ fontSize: `${cardState.affiliationSize}px`, lineHeight: '1.6', fontFamily: cardFontFamily, fontWeight: 900 }" class="m-0">
                 {{ cardState.affiliation }}
               </p>
             </div>

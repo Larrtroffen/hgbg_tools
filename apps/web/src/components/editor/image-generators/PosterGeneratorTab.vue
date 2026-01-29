@@ -9,7 +9,7 @@ const editorStore = useEditorStore()
 const posterRef = ref<HTMLElement | null>(null)
 const isExporting = ref(false)
 const exportBtnText = ref('生成并插入 (1242×1660)')
-const posterFontFamily = "'Noto Serif SC', serif"
+const posterFontFamily = '\'Noto Serif SC\', serif'
 
 const subtitleHtml = computed(() => {
   const raw = posterState.value.subtitle ?? ''
@@ -61,7 +61,8 @@ function onImageChange(e: Event) {
 }
 
 async function onExport() {
-  if (!posterRef.value) return
+  if (!posterRef.value)
+    return
   isExporting.value = true
   exportBtnText.value = '生成中...'
   try {
@@ -69,7 +70,6 @@ async function onExport() {
       pixelRatio: 2,
       backgroundColor: '#ffffff',
       skipFonts: false,
-      fontFetchTimeout: 60000,
     })
     const file = await dataUrlToFile(dataUrl, 'poster-export.png')
     const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
@@ -193,16 +193,16 @@ async function onExport() {
         <div
           class="content-top shrink-0 px-[7%] box-border"
           :style="{
-            paddingTop: posterState.spacingTop + '%',
-            marginBottom: posterState.spacingMainToImage + '%',
+            paddingTop: `${posterState.spacingTop}%`,
+            marginBottom: `${posterState.spacingMainToImage}%`,
           }"
         >
-          <h1 class="top-title m-0 text-[#0f3b83]" :style="{ fontSize: posterState.topTitleSize + 'px', fontFamily: posterFontFamily, fontWeight: 900, letterSpacing: '2px' }">
+          <h1 class="top-title m-0 text-[#0f3b83]" :style="{ fontSize: `${posterState.topTitleSize}px`, fontFamily: posterFontFamily, fontWeight: 900, letterSpacing: '2px' }">
             「<span class="text-with-gradient">{{ posterState.topTitle }}</span>」
           </h1>
           <h2
             class="main-title m-0 text-[#4b596f]"
-            :style="{ fontSize: posterState.mainTitleSize + 'px', marginTop: posterState.spacingTitleGap + '%', fontFamily: posterFontFamily, fontWeight: 700, lineHeight: 1.4 }"
+            :style="{ fontSize: `${posterState.mainTitleSize}px`, marginTop: `${posterState.spacingTitleGap}%`, fontFamily: posterFontFamily, fontWeight: 700, lineHeight: 1.4 }"
           >
             {{ posterState.mainTitle1 }}<br>{{ posterState.mainTitle2 }}
           </h2>
@@ -218,17 +218,17 @@ async function onExport() {
         <div
           class="content-bottom flex flex-1 flex-col px-[7%] pb-[5%] box-border min-h-0"
           :style="{
-            paddingTop: posterState.spacingImageToSub + '%',
+            paddingTop: `${posterState.spacingImageToSub}%`,
           }"
         >
           <p
             class="subtitle m-0 text-right text-black"
-            :style="{ fontSize: posterState.subtitleSize + 'px', marginBottom: posterState.spacingSubToCredits + '%', fontFamily: posterFontFamily, fontWeight: 900, lineHeight: 1.8 }"
+            :style="{ fontSize: `${posterState.subtitleSize}px`, marginBottom: `${posterState.spacingSubToCredits}%`, fontFamily: posterFontFamily, fontWeight: 900, lineHeight: 1.8 }"
             v-html="subtitleHtml"
           />
           <div
             class="credits mt-auto text-[#0f3b83]"
-            :style="{ fontSize: posterState.creditsSize + 'px', fontFamily: posterFontFamily, fontWeight: 700, lineHeight: 1.7 }"
+            :style="{ fontSize: `${posterState.creditsSize}px`, fontFamily: posterFontFamily, fontWeight: 700, lineHeight: 1.7 }"
             v-html="creditsHtml"
           />
         </div>

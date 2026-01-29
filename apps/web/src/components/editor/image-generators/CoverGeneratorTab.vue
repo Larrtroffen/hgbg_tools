@@ -7,7 +7,7 @@ import { dataUrlToFile, fileUpload } from '@/utils/file'
 const { coverState } = useGeneratorCache()
 const editorStore = useEditorStore()
 const coverRef = ref<HTMLElement | null>(null)
-const coverFontFamily = "'Noto Serif SC', serif"
+const coverFontFamily = '\'Noto Serif SC\', serif'
 const isExporting = ref(false)
 const exportBtnText = ref('生成并插入 (1283×383)')
 
@@ -36,15 +36,15 @@ function onRightBgChange(e: Event) {
 }
 
 async function onExport() {
-  if (!coverRef.value) return
+  if (!coverRef.value)
+    return
   isExporting.value = true
   exportBtnText.value = '生成中...'
   try {
     const dataUrl = await toPng(coverRef.value, {
       pixelRatio: 2,
-      backgroundColor: null,
+      backgroundColor: undefined,
       skipFonts: false,
-      fontFetchTimeout: 60000,
     })
     const file = await dataUrlToFile(dataUrl, 'wechat-cover-1283x383.png')
     const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
@@ -158,17 +158,17 @@ async function onExport() {
         ref="coverRef"
         class="cover-preview relative flex shrink-0 overflow-hidden rounded-lg border shadow-lg"
         :style="{
-          width: '641.5px',
-          height: '191.5px',
-          minWidth: '641.5px',
-          minHeight: '191.5px',
-          backgroundColor: '#ccc',
-          fontFamily: coverFontFamily,
-          fontWeight: 900,
-          '--overlay-height': coverState.overlayHeight + '%',
+          'width': '641.5px',
+          'height': '191.5px',
+          'minWidth': '641.5px',
+          'minHeight': '191.5px',
+          'backgroundColor': '#ccc',
+          'fontFamily': coverFontFamily,
+          'fontWeight': 900,
+          '--overlay-height': `${coverState.overlayHeight}%`,
           '--overlay-opacity': coverState.overlayOpacity / 100,
-          '--left-line-gap': coverState.leftLineGap + 'px',
-          '--right-line-gap': coverState.rightLineGap + 'px',
+          '--left-line-gap': `${coverState.leftLineGap}px`,
+          '--right-line-gap': `${coverState.rightLineGap}px`,
         }"
       >
         <div
@@ -180,8 +180,8 @@ async function onExport() {
           }"
         >
           <div class="absolute inset-0 z-[2] flex flex-col justify-center px-5 text-center text-white box-border" :style="{ fontFamily: coverFontFamily, fontWeight: 900, lineHeight: 1.3 }">
-            <span :style="{ fontSize: coverState.leftTitleSize1 + 'px', marginBottom: coverState.leftLineGap + 'px', display: 'block', fontFamily: coverFontFamily, fontWeight: 900 }">{{ coverState.leftTitle1 }}</span>
-            <span :style="{ fontSize: coverState.leftTitleSize2 + 'px', display: 'block', fontFamily: coverFontFamily, fontWeight: 900 }">{{ coverState.leftTitle2 }}</span>
+            <span :style="{ fontSize: `${coverState.leftTitleSize1}px`, marginBottom: `${coverState.leftLineGap}px`, display: 'block', fontFamily: coverFontFamily, fontWeight: 900 }">{{ coverState.leftTitle1 }}</span>
+            <span :style="{ fontSize: `${coverState.leftTitleSize2}px`, display: 'block', fontFamily: coverFontFamily, fontWeight: 900 }">{{ coverState.leftTitle2 }}</span>
           </div>
         </div>
         <div
@@ -193,8 +193,8 @@ async function onExport() {
           }"
         >
           <div class="absolute inset-0 z-[2] flex flex-col justify-center px-5 text-center text-white box-border" :style="{ fontFamily: coverFontFamily, fontWeight: 900, lineHeight: 1.3 }">
-            <span :style="{ fontSize: coverState.rightTitleSize1 + 'px', marginBottom: coverState.rightLineGap + 'px', display: 'block', fontFamily: coverFontFamily, fontWeight: 900 }">{{ coverState.rightTitle1 }}</span>
-            <span :style="{ fontSize: coverState.rightTitleSize2 + 'px', display: 'block', fontFamily: coverFontFamily, fontWeight: 900 }">{{ coverState.rightTitle2 }}</span>
+            <span :style="{ fontSize: `${coverState.rightTitleSize1}px`, marginBottom: `${coverState.rightLineGap}px`, display: 'block', fontFamily: coverFontFamily, fontWeight: 900 }">{{ coverState.rightTitle1 }}</span>
+            <span :style="{ fontSize: `${coverState.rightTitleSize2}px`, display: 'block', fontFamily: coverFontFamily, fontWeight: 900 }">{{ coverState.rightTitle2 }}</span>
           </div>
         </div>
         <div

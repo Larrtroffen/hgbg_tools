@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { storeToRefs } from 'vue'
 import { Toaster } from '@/components/ui/sonner'
 import { useUIStore } from '@/stores/ui'
 import CodemirrorEditor from '@/views/CodemirrorEditor.vue'
 
+defineOptions({ components: { Toaster } })
 const uiStore = useUIStore()
 const { isDark } = storeToRefs(uiStore)
 </script>
@@ -48,7 +49,6 @@ body {
   border-radius: 6px;
   background-color: rgba(144, 146, 152, 0.5);
 }
-
 
 /* CSS-hints */
 .CodeMirror-hints {
