@@ -104,7 +104,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       forcePathStyle: false,
     })
 
-    await (client as { send: (command: PutObjectCommand) => Promise<unknown> }).send(
+    await (client as unknown as { send: (command: PutObjectCommand) => Promise<unknown> }).send(
       new PutObjectCommand({
         Bucket: bucket,
         Key: key,
