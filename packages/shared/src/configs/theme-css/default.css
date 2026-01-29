@@ -1,0 +1,349 @@
+/**
+ * @name: 科技人文 · 深蓝 Pro，回归不归
+ * @author: Larrtroffen
+ *
+ * 按 Alt/Option + Shift + F 可格式化
+ * 如需使用主题色，请使用 var(--md-primary-color) 代替颜色值
+ * 如：color: var(--md-primary-color);
+ */
+
+/* 顶层容器样式 */
+container {
+  /* 定义主题色：一个专业且不刺眼的深蓝色 */
+  --md-primary-color: #1A3A6D;
+  /* 全局字体，优先使用系统UI字体，保证中英文显示效果 */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* 基础字号和颜色，为长文阅读优化 */
+  font-size: 16px;
+  line-height: 1.7;
+  color: #333333;
+  /* 背景色使用非常浅的灰色，减少纯白背景的视觉刺激 */
+  background-color: #fcfcfc;
+  /* 为整个容器增加一点内边距 */
+  padding: 16px;
+}
+
+/* 一级标题样式 */
+h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--md-primary-color);
+  margin: 32px 0 24px;
+  text-align: center;
+  /* 增加相对定位和底部内边距，为渐变线条留出空间 */
+  position: relative;
+  padding-bottom: 15px;
+}
+
+/* 使用伪元素创建 h1 下方的渐变装饰线条 */
+h1::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 80px; /* 线条宽度 */
+  height: 3px; /* 线条高度 */
+  border-radius: 2px;
+  /* 核心：从浅蓝到主题色再到浅蓝的渐变 */
+  background: linear-gradient(to right, #A9C9FF, var(--md-primary-color), #A9C9FF);
+}
+
+/* 二级标题样式 */
+h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--md-primary-color);
+  margin: 28px 0 16px;
+  padding-left: 12px;
+  /* 保留左侧的标志性竖线 */
+  border-left: 4px solid var(--md-primary-color);
+  /* 增加底部内边距，与下划线保持距离 */
+  padding-bottom: 8px;
+  /* 核心：使用 border-image 创建从左到右的渐变下划线 */
+  border-bottom: 2px solid;
+  border-image-source: linear-gradient(to right, var(--md-primary-color) 30%, rgba(26, 58, 109, 0.1) 100%);
+  border-image-slice: 1;
+  /* 移除背景色，让版面更简洁 */
+  background-color: transparent;
+}
+
+/* 三级标题样式 */
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222222;
+  margin: 24px 0 12px;
+}
+
+/* 四级标题样式 */
+h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #444444;
+  margin: 20px 0 10px;
+}
+
+/* 五级标题样式 */
+h5 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #555555;
+  margin: 16px 0 8px;
+}
+
+/* 六级标题样式 */
+h6 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666666;
+  margin: 16px 0 8px;
+}
+
+/* 图片样式 */
+img {
+  /* 图片添加圆角和阴影，使其浮动在内容之上 */
+  border-radius: 3px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin: 5px auto;
+  display: block;
+  max-width: 100%;
+}
+
+/* 引用样式 */
+blockquote {
+  /* 引用块增加背景色和边框，与正文区分 */
+  margin: 20px 0;
+  padding: 16px 20px;
+  background-color: #f5f7fa;
+  border-left: 3px solid var(--md-primary-color);
+  border-radius: 4px;
+}
+
+/* 引用段落样式 */
+blockquote_p {
+  /* 引用内的文字颜色稍浅，并带一点斜体，体现人文感 */
+  color: #555555;
+  font-style: italic;
+  margin: 0;
+  text-align: justify; /* 两端对齐 */
+}
+
+/* GFM note 样式 */
+blockquote_note {
+  background-color: rgba(26, 58, 109, 0.08);
+  border-left-color: var(--md-primary-color);
+}
+
+/* GFM tip 样式 */
+blockquote_tip {
+  background-color: rgba(40, 167, 69, 0.1);
+  border-left-color: #28a745;
+}
+
+/* GFM important 样式 */
+blockquote_important {
+  background-color: rgba(0, 123, 255, 0.1);
+  border-left-color: #007bff;
+}
+
+/* GFM warning 样式 */
+blockquote_warning {
+  background-color: rgba(255, 193, 7, 0.1);
+  border-left-color: #ffc107;
+}
+
+/* GFM caution 样式 */
+blockquote_caution {
+  background-color: rgba(220, 53, 69, 0.1);
+  border-left-color: #dc3545;
+}
+
+/* GFM 通用标题 */
+blockquote_title {
+  font-weight: 600;
+  font-style: normal;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* GFM note 标题 */
+blockquote_title_note {
+  color: var(--md-primary-color);
+}
+
+/* GFM tip 标题 */
+blockquote_title_tip {
+  color: #28a745;
+}
+
+/* GFM important 标题 */
+blockquote_title_important {
+  color: #007bff;
+}
+
+/* GFM warning 标题 */
+blockquote_title_warning {
+  color: #ffc107;
+}
+
+/* GFM caution 标题 */
+blockquote_title_caution {
+  color: #dc3545;
+}
+
+/* GFM note 段落样式 */
+blockquote_p_note {
+  color: #16325c;
+  font-style: normal;
+  text-align: justify; /* 两端对齐 */
+}
+
+/* GFM tip 段落样式 */
+blockquote_p_tip {
+  color: #217a3a;
+  font-style: normal;
+  text-align: justify; /* 两端对齐 */
+}
+
+/* GFM important 段落样式 */
+blockquote_p_important {
+  color: #0062cc;
+  font-style: normal;
+  text-align: justify; /* 两端对齐 */
+}
+
+/* GFM warning 段落样式 */
+blockquote_p_warning {
+  color: #d9a300;
+  font-style: normal;
+  text-align: justify; /* 两端对齐 */
+}
+
+/* GFM caution 段落样式 */
+blockquote_p_caution {
+  color: #b82e3b;
+  font-style: normal;
+  text-align: justify; /* 两端对齐 */
+}
+
+/* 段落样式 */
+p {
+  margin: 0 0 16px;
+  /* 增加一点点字间距，提升阅读体验 */
+  letter-spacing: 0.5px;
+  text-align: justify; /* 两端对齐 */
+}
+
+/* 分割线样式 */
+hr {
+  /* 使用三个圆点作为分割线，更具设计感 */
+  border: none;
+  text-align: center;
+  margin: 32px auto;
+}
+
+hr::after {
+  content: '···';
+  font-size: 24px;
+  color: var(--md-primary-color);
+  letter-spacing: 0.5em;
+  opacity: 0.5;
+}
+
+/* 行内代码样式（渲染输出为 <code class="codespan">） */
+.codespan {
+  /* 科技感的关键元素 */
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  background-color: rgba(27, 31, 35, 0.07);
+  color: var(--md-primary-color);
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* 粗体样式 */
+strong {
+  /* 粗体使用主题色，突出强调 */
+  color: var(--md-primary-color);
+  font-weight: 600;
+}
+
+/* 链接样式 */
+a {
+  color: var(--md-primary-color);
+  text-decoration: none;
+  /* 使用下划线边框，比默认下划线更优雅 */
+  border-bottom: 1px solid var(--md-primary-color);
+  font-weight: 500;
+  padding-bottom: 1px;
+  /* 悬停效果 */
+  transition: opacity 0.2s ease-in-out;
+}
+
+a:hover {
+  opacity: 0.7;
+}
+
+/* 微信链接样式 */
+a[href*="mp.weixin.qq.com"] {
+  color: var(--md-primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: none;
+}
+
+/* 有序列表样式 */
+ol {
+  padding-left: 24px;
+  margin: 16px 0;
+}
+
+/* 无序列表样式 */
+ul {
+  padding-left: 24px;
+  margin: 16px 0;
+  list-style-type: none; /* 移除默认的项目符号 */
+}
+
+/* 列表项样式 */
+listitem {
+  margin-bottom: 8px;
+  text-align: justify; /* 两端对齐 */
+}
+
+/* 自定义无序列表的项目符号 */
+ul > listitem::before {
+  content: '•'; /* 使用实心圆点 */
+  color: var(--md-primary-color);
+  font-weight: bold;
+  display: inline-block;
+  width: 1em;
+  margin-left: -1em;
+}
+
+/* 代码块外层样式（渲染输出为 <pre class="hljs code__pre">） */
+pre.code__pre,
+.hljs.code__pre {
+  /* 深色代码块，符合开发者审美 */
+  background-color: #2d2d2d;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 20px 0;
+  overflow-x: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  /* 使用 WeChat-Code-Theme-Dark 的字体栈 */
+  font-family: 'WeChat-Code', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+}
+
+/* 代码块内的 code 样式 */
+pre.code__pre code,
+.hljs.code__pre code {
+  /* 代码块内的文字颜色 */
+  color: #cccccc;
+  /* 覆盖行内代码的样式 */
+  background-color: transparent !important;
+  padding: 0 !important;
+  font-size: 14px;
+  line-height: 1.6;
+}

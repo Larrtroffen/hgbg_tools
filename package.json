@@ -1,0 +1,42 @@
+{
+  "name": "md",
+  "type": "module",
+  "version": "2.1.0",
+  "private": false,
+  "description": "Markdown Editor | Markdown 编辑器核心",
+  "engines": {
+    "node": ">=22.16.0"
+  },
+  "scripts": {
+    "start": "pnpm web dev",
+    "web": "pnpm --filter @md/web",
+    "lint": "eslint . --fix",
+    "type-check": "vue-tsc --build --force",
+    "postinstall": "simple-git-hooks"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.975.0",
+    "@codemirror/state": "^6.5.4",
+    "@codemirror/view": "6.39.11",
+    "@upstash/redis": "^1.34.3",
+    "@vercel/node": "^3.2.0",
+    "busboy": "^1.6.0"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "7.2.0",
+    "@types/node": "^25.0.10",
+    "cross-env": "^10.1.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-format": "^1.3.1",
+    "npm-run-all": "^4.1.5",
+    "prettier": "2.8.8",
+    "simple-git-hooks": "^2.13.1",
+    "typescript": "~5.9.3"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged"
+  },
+  "lint-staged": {
+    "*": "eslint --fix"
+  }
+}

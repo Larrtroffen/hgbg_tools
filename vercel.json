@@ -1,0 +1,12 @@
+{
+  "buildCommand": "pnpm install && pnpm web run build:h5-netlify",
+  "outputDirectory": "apps/web/dist",
+  "installCommand": "pnpm install",
+  "framework": null,
+  "env": {
+    "VITE_USE_REMOTE_STORAGE": "true"
+  },
+  "rewrites": [
+    { "source": "/(?!api)(.*)", "destination": "/index.html" }
+  ]
+}
