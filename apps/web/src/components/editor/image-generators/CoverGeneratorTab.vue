@@ -2,6 +2,7 @@
 import { toPng } from 'html-to-image'
 import { useEditorStore } from '@/stores/editor'
 import { useGeneratorCache } from '@/stores/generatorCache'
+import { CARD_COVER_POSTER_FONT_CSS_URL, getGoogleFontEmbedCSS } from '@/utils/export-fonts'
 import { dataUrlToFile, fileUpload } from '@/utils/file'
 
 const { coverState } = useGeneratorCache()
@@ -41,11 +42,15 @@ async function onExport() {
   isExporting.value = true
   exportBtnText.value = '生成中...'
   try {
+    const fontEmbedCSS = await getGoogleFontEmbedCSS(CARD_COVER_POSTER_FONT_CSS_URL)
     const dataUrl = await toPng(coverRef.value, {
       pixelRatio: 2,
       backgroundColor: undefined,
-      skipFonts: false,
+      fontEmbedCSS,
     })
+    if (!dataUrl || typeof dataUrl !== 'string') {
+      throw new Error('生成图片失败')
+    }
     const file = await dataUrlToFile(dataUrl, 'wechat-cover-1283x383.png')
     const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
     const url = await fileUpload(base64, file)
@@ -55,7 +60,9 @@ async function onExport() {
   catch (err) {
     console.error('封面生成失败:', err)
     const msg = (err as Error)?.message ?? ''
-    toast.error(msg.includes('fetch') || msg.includes('CORS') ? '上传失败：请确认腾讯云 COS 存储桶已配置 CORS 允许当前站点来源' : '封面生成失败，请查看控制台')
+    const isCors = msg.includes('fetch') || msg.includes('CORS')
+    const isStyle = msg.includes('cross-origin') || msg.includes('cssRules') || msg.includes('trim')
+    toast.error(isCors ? '上传失败：请确认腾讯云 COS 存储桶已配置 CORS 允许当前站点来源' : isStyle ? '生成失败：当前页面外部样式/字体无法参与导出，请重试' : '封面生成失败，请查看控制台')
   }
   finally {
     isExporting.value = false

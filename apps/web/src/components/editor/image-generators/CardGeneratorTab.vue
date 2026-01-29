@@ -2,9 +2,14 @@
 import { toPng } from 'html-to-image'
 import { useEditorStore } from '@/stores/editor'
 import { useGeneratorCache } from '@/stores/generatorCache'
+import { CARD_COVER_POSTER_FONT_CSS_URL, getGoogleFontEmbedCSS } from '@/utils/export-fonts'
 import { dataUrlToFile, fileUpload } from '@/utils/file'
 
 const { cardState } = useGeneratorCache()
+
+const cardIconStyle = { display: 'inline-block', width: '1em', height: '1em', fontSize: '18px', verticalAlign: 'middle', marginTop: '4px', flexShrink: 0 }
+const globeSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" style="width:1em;height:1em"><path d="M352 256c0 22.2-1.2 43.6-3.3 64H163.3c-2.2-20.4-3.3-41.8-3.3-64s1.2-43.6 3.3-64H348.7c2.2 20.4 3.3 41.8 3.3 64zm-89.6 128h-77.1c-26-24.5-45.6-54.4-57.4-87.8c-3.2-9-5.2-18.4-6.1-28H162c.9 9.6 2.9 19 6.1 28c11.8 33.4 31.4 63.3 57.4 87.8zm-117-320h77.1c26 24.5 45.6 54.4 57.4 87.8c3.2 9 5.2 18.4 6.1 28H162c-.9-9.6-2.9-19-6.1-28c-11.8-33.4-31.4-63.3-57.4-87.8zM64 256c0-22.2 1.2-43.6 3.3-64h185.4c2.2 20.4 3.3 41.8 3.3 64s-1.2 43.6-3.3 64H67.3c-2.2-20.4-3.3-41.8-3.3-64zm89.6-128h77.1c-26-24.5-45.6-54.4-57.4-87.8c-3.2-9-5.2-18.4-6.1-28H222c-.9 9.6-2.9 19-6.1 28c-11.8 33.4-31.4 63.3-57.4 87.8zM256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM32 256a224 224 0 1 0 448 0A224 224 0 1 0 32 256z"/></svg>'
+const mapMarkerSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="currentColor" style="width:1em;height:1em"><path d="M215.7 499.2C73 371 0 304.7 0 192C0 86 86 0 192 0s192 86 192 192c0 112.7-73 179-215.7 307.2c-9.4 8.5-22.9 8.5-32.4 0zM192 272a80 80 0 1 0 0-160 80 80 0 1 0 0 160z"/></svg>'
 const editorStore = useEditorStore()
 const cardRef = ref<HTMLElement | null>(null)
 const isExporting = ref(false)
@@ -37,11 +42,15 @@ async function onExport() {
   isExporting.value = true
   exportBtnText.value = '生成中...'
   try {
+    const fontEmbedCSS = await getGoogleFontEmbedCSS(CARD_COVER_POSTER_FONT_CSS_URL)
     const dataUrl = await toPng(cardRef.value, {
       pixelRatio: 2,
       backgroundColor: undefined,
-      skipFonts: false,
+      fontEmbedCSS,
     })
+    if (!dataUrl || typeof dataUrl !== 'string') {
+      throw new Error('生成图片失败')
+    }
     const file = await dataUrlToFile(dataUrl, 'business-card.png')
     const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
     const url = await fileUpload(base64, file)
@@ -51,7 +60,9 @@ async function onExport() {
   catch (err) {
     console.error('名片生成失败:', err)
     const msg = (err as Error)?.message ?? ''
-    toast.error(msg.includes('fetch') || msg.includes('CORS') ? '上传失败：请确认腾讯云 COS 存储桶已配置 CORS 允许当前站点来源' : '名片生成失败，请查看控制台')
+    const isCors = msg.includes('fetch') || msg.includes('CORS')
+    const isStyle = msg.includes('cross-origin') || msg.includes('cssRules') || msg.includes('trim')
+    toast.error(isCors ? '上传失败：请确认腾讯云 COS 存储桶已配置 CORS 允许当前站点来源' : isStyle ? '生成失败：当前页面外部样式/字体无法参与导出，请重试或简化页面' : '名片生成失败，请查看控制台')
   }
   finally {
     isExporting.value = false
@@ -142,11 +153,11 @@ async function onExport() {
           </div>
           <div class="flex flex-col gap-[15px]">
             <div class="flex items-start gap-[15px]">
-              <i class="fa-solid fa-globe shrink-0 mt-1 text-[18px]" style="margin-top: 4px;" />
+              <span :style="cardIconStyle" v-html="globeSvg" />
               <p :style="{ fontSize: `${cardState.contactInfoSize}px`, lineHeight: '1.6', fontFamily: cardFontFamily, fontWeight: 900 }" class="m-0" v-html="contactInfoHtml" />
             </div>
             <div class="flex items-start gap-[15px]">
-              <i class="fa-solid fa-map-marker-alt shrink-0 mt-1 text-[18px]" style="margin-top: 4px;" />
+              <span :style="cardIconStyle" v-html="mapMarkerSvg" />
               <p :style="{ fontSize: `${cardState.affiliationSize}px`, lineHeight: '1.6', fontFamily: cardFontFamily, fontWeight: 900 }" class="m-0">
                 {{ cardState.affiliation }}
               </p>
