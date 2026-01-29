@@ -2,37 +2,16 @@
 import { storeToRefs } from 'pinia'
 import { Toaster } from '@/components/ui/sonner'
 import { useUIStore } from '@/stores/ui'
-import { addPrefix } from '@/utils'
-import { store } from '@/utils/storage'
 import CodemirrorEditor from '@/views/CodemirrorEditor.vue'
 
 defineOptions({ components: { Toaster } })
 const uiStore = useUIStore()
 const { isDark } = storeToRefs(uiStore)
-
-// 远程存储：先触发 GET 拉取 posts/current_post_id，再渲染编辑器，保证刷新/他人访问时能拿到数据
-const useRemoteStorage = import.meta.env.VITE_USE_REMOTE_STORAGE === 'true'
-const storageReady = ref(!useRemoteStorage)
-
-onMounted(async () => {
-  if (!useRemoteStorage)
-    return
-  const timeout = new Promise<void>(r => setTimeout(r, 8000))
-  const load = Promise.all([
-    store.getJSON(addPrefix('posts'), []),
-    store.get(addPrefix('current_post_id')),
-  ]).then(() => {})
-  await Promise.race([load, timeout])
-  storageReady.value = true
-})
 </script>
 
 <template>
   <AppSplash />
-  <CodemirrorEditor v-if="storageReady" />
-  <div v-else class="storage-loading">
-    <p>正在从服务器加载数据…</p>
-  </div>
+  <CodemirrorEditor />
   <Toaster
     rich-colors
     position="top-center"
@@ -111,15 +90,5 @@ body {
 }
 .current-match {
   background-color: #ff5722; /* 当前匹配项更鲜艳的颜色 */
-}
-
-.storage-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  color: var(--color-text-secondary, #666);
-  font-size: 14px;
 }
 </style>
