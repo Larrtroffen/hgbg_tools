@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { storeToRefs } from 'vue'
+import { storeToRefs } from 'pinia'
 import { Toaster } from '@/components/ui/sonner'
 import { useUIStore } from '@/stores/ui'
 import CodemirrorEditor from '@/views/CodemirrorEditor.vue'
