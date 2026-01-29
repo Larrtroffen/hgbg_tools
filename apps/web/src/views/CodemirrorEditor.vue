@@ -35,7 +35,7 @@ const cssEditorStore = useCssEditorStore()
 const { editor } = storeToRefs(editorStore)
 const { output } = storeToRefs(renderStore)
 const { isDark } = storeToRefs(uiStore)
-const { posts, currentPostIndex } = storeToRefs(postStore)
+const { posts, currentPostIndex, currentPost } = storeToRefs(postStore)
 const { previewWidth } = storeToRefs(themeStore)
 const {
   isMobile,
@@ -611,19 +611,19 @@ watch(currentPostIndex, () => {
   if (!codeMirrorView.value)
     return
 
-  const currentPost = posts.value[currentPostIndex.value]
-  if (!currentPost)
+  const post = posts.value[currentPostIndex.value]
+  if (!post)
     return
 
   const currentContent = codeMirrorView.value.state.doc.toString()
 
   // 只有当内容不同时才更新，避免不必要的更新
-  if (currentContent !== currentPost.content) {
+  if (currentContent !== post.content) {
     codeMirrorView.value.dispatch({
       changes: {
         from: 0,
         to: codeMirrorView.value.state.doc.length,
-        insert: currentPost.content,
+        insert: post.content,
       },
     })
 
@@ -631,6 +631,27 @@ watch(currentPostIndex, () => {
     editorRefresh()
   }
 })
+
+// 远程存储：当 posts 从 API 加载完成后，当前文章内容会变化，需同步到编辑器（刷新/他人访问时拉取的数据）
+watch(
+  () => currentPost.value?.content,
+  (newContent) => {
+    if (newContent == null || !codeMirrorView.value)
+      return
+    const editorContent = codeMirrorView.value.state.doc.toString()
+    if (editorContent !== newContent) {
+      codeMirrorView.value.dispatch({
+        changes: {
+          from: 0,
+          to: codeMirrorView.value.state.doc.length,
+          insert: newContent,
+        },
+      })
+      editorRefresh()
+    }
+  },
+  { flush: 'post' },
+)
 
 // 历史记录的定时器
 const historyTimer = ref<NodeJS.Timeout>()
