@@ -49,12 +49,12 @@
 
 仓库中已具备：
 
-| 项 | 说明 |
-|----|------|
-| **vercel.json** | `buildCommand`、`outputDirectory`、`installCommand`、`env.VITE_USE_REMOTE_STORAGE=true`、`rewrites`（已排除 `/api`，避免 API 被重写到 index.html） |
-| **package.json**（根） | 含 `@upstash/redis`、`@vercel/node` |
-| **api/** | Serverless 入口：`api/storage/index.ts`、`api/storage/keys.ts`、`api/storage/[key].ts` |
-| **apps/web** | 前端 SPA，构建输出到 `apps/web/dist` |
+| 项                     | 说明                                                                                                                                               |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **vercel.json**        | `buildCommand`、`outputDirectory`、`installCommand`、`env.VITE_USE_REMOTE_STORAGE=true`、`rewrites`（已排除 `/api`，避免 API 被重写到 index.html） |
+| **package.json**（根） | 含 `@upstash/redis`、`@vercel/node`                                                                                                                |
+| **api/**               | Serverless 入口：`api/storage/index.ts`、`api/storage/keys.ts`、`api/storage/[key].ts`                                                             |
+| **apps/web**           | 前端 SPA，构建输出到 `apps/web/dist`                                                                                                               |
 
 无需修改即可部署；若你自定义了 `installCommand` 或 `buildCommand`，请确保能正确安装依赖并执行 `pnpm web run build:h5-netlify`。
 
@@ -63,7 +63,7 @@
 - **方式一**：在 Vercel 项目里连接 Git 后，每次推送到对应分支会自动构建并部署。
 - **方式二**：本地安装 Vercel CLI（`npm i -g vercel`），在项目根目录执行 `vercel`，按提示关联项目并部署。
 
-部署完成后，访问分配的域名（如 `https://xxx.vercel.app`）。  
+部署完成后，访问分配的域名（如 `https://xxx.vercel.app`）。
 此时前端会使用远程存储，所有数据持久化在 Upstash Redis 中，且同一项目下的访问者共享同一份数据。
 
 ---
@@ -77,18 +77,18 @@
 
 在 Vercel 项目 **Settings → Environment Variables** 中配置以下变量后，所有访问该站点的人即可直接使用图床与 Dify 工作流：
 
-| 变量名 | 说明 | 必填 |
-|--------|------|------|
-| **腾讯云 COS（图床）** | | |
-| `TENCENT_COS_SECRET_ID` | 腾讯云 SecretId | 使用图床时必填 |
-| `TENCENT_COS_SECRET_KEY` | 腾讯云 SecretKey | 使用图床时必填 |
-| `TENCENT_COS_BUCKET` | 存储桶名称（如 `xxx-1257068422`） | 使用图床时必填 |
-| `TENCENT_COS_REGION` | 地域（如 `ap-shanghai`） | 使用图床时必填 |
-| `TENCENT_COS_PATH` | 可选，对象键前缀 | 可选 |
-| `TENCENT_COS_CDN_HOST` | 可选，CDN 域名，返回的 URL 将以此为准 | 可选 |
-| **Dify 工作流** | | |
-| `DIFY_API_KEY` | Dify 应用 API Key（App Key） | 使用 Dify 工作流时必填 |
-| `DIFY_BASE_URL` | 可选，默认 `https://api.dify.ai/v1` | 可选 |
+| 变量名                   | 说明                                  | 必填                   |
+| ------------------------ | ------------------------------------- | ---------------------- |
+| **腾讯云 COS（图床）**   |                                       |                        |
+| `TENCENT_COS_SECRET_ID`  | 腾讯云 SecretId                       | 使用图床时必填         |
+| `TENCENT_COS_SECRET_KEY` | 腾讯云 SecretKey                      | 使用图床时必填         |
+| `TENCENT_COS_BUCKET`     | 存储桶名称（如 `xxx-1257068422`）     | 使用图床时必填         |
+| `TENCENT_COS_REGION`     | 地域（如 `ap-shanghai`）              | 使用图床时必填         |
+| `TENCENT_COS_PATH`       | 可选，对象键前缀                      | 可选                   |
+| `TENCENT_COS_CDN_HOST`   | 可选，CDN 域名，返回的 URL 将以此为准 | 可选                   |
+| **Dify 工作流**          |                                       |                        |
+| `DIFY_API_KEY`           | Dify 应用 API Key（App Key）          | 使用 Dify 工作流时必填 |
+| `DIFY_BASE_URL`          | 可选，默认 `https://api.dify.ai/v1`   | 可选                   |
 
 - 未配置 COS 时：访客若选择腾讯云图床，会收到「COS not configured」类提示，可在图床设置中自行填写 COS 或改用其他图床。
 - 未配置 Dify 时：访客使用 Dify 工作流会收到「Dify not configured」类提示，可在 AI 面板中自行填写 API Key 使用（此时走前端直连，需自行保管 Key）。
@@ -102,8 +102,8 @@
   - 可删除 `vercel.json` 里的 `env.VITE_USE_REMOTE_STORAGE`；
   - 在 Vercel 后台 **Settings → Environment Variables** 中，仅给 **Production** 添加：
     - 名称：`VITE_USE_REMOTE_STORAGE`
-    - 值：`true`  
-  这样 Preview/Development 不设该变量，前端会回退到 localStorage。
+    - 值：`true`
+      这样 Preview/Development 不设该变量，前端会回退到 localStorage。
 
 ---
 
@@ -128,3 +128,43 @@
 - **Upstash Redis**：免费档有每日请求与数据量限制，个人或小团队共享一份编辑数据一般够用；超出后可考虑 Upstash 付费计划。
 
 按上述步骤即可在 Vercel 上免费完成前后端部署，并实现全部数据的持久化存储。
+
+---
+
+## 七、排查：部署后数据没有「所有人共享」
+
+若部署成功，但不同人打开网站看到的仍是各自的内容、没有互通，按下面逐项检查。
+
+### 1. 确认前端启用了远程存储
+
+- 打开你部署好的站点（如 `https://xxx.vercel.app`）。
+- 按 F12 打开开发者工具 → **Console**。
+- 若启用成功，会有一条：`[MD] 远程存储已启用：本站数据所有人共享并持久化`。
+- **若没有这条**：说明构建时没有读到 `VITE_USE_REMOTE_STORAGE=true`。
+  - 到 Vercel 项目 **Settings → Environment Variables**。
+  - 新增变量：名称 `VITE_USE_REMOTE_STORAGE`，值 `true`，环境选 **Production**（以及需要共享的 Preview）。
+  - 保存后 **重新部署**（Redeploy），再打开站点看 Console。
+
+### 2. 确认已接入 Upstash Redis
+
+- 若未接入 Upstash，`/api/storage/*` 会因缺少 `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` 而报错，前端读到的都是空，自然无法共享。
+- 在 Vercel 项目 **Settings → Integrations** 中确认已安装 **Upstash**，且关联了当前项目。
+- 在 [Vercel 集成 - Upstash](https://vercel.com/integrations/upstash) 中为该项目添加集成，并创建/绑定一个 Redis 数据库。
+- 集成成功后，Vercel 会自动注入上述两个环境变量，无需在代码里配置。
+
+### 3. 确认 API 请求正常
+
+- 打开部署站点，F12 → **Network**，筛选 XHR/Fetch。
+- 刷新页面或编辑内容触发保存，应能看到对 `https://你的域名/api/storage/...` 的请求（如 `GET /api/storage/keys`、`PUT /api/storage/xxx`）。
+- 若请求存在但状态码为 **5xx**：多半是 Upstash 未配置或 API 报错，到 Vercel **Deployments → 某次部署 → Functions** 查看对应 `/api/storage/*` 的日志。
+- 若完全没有 `/api/storage` 请求：说明前端仍在使用本地存储，回到第 1 步检查环境变量并重新部署。
+
+### 4. 小结
+
+| 现象                                      | 可能原因                                    | 处理                                                       |
+| ----------------------------------------- | ------------------------------------------- | ---------------------------------------------------------- |
+| Console 无「远程存储已启用」              | 构建时未注入 `VITE_USE_REMOTE_STORAGE=true` | 在 Vercel 环境变量中加上该变量，并重新部署                 |
+| 有「远程存储已启用」但内容不共享 / 不保存 | API 失败（如未配置 Upstash）                | 接入 Upstash 集成并重新部署，查看 Network / Functions 日志 |
+| 请求 /api/storage 返回 404                | 路由或部署配置问题                          | 确认 `vercel.json` 中 rewrites 未把 `/api` 重写到前端      |
+
+完成以上检查并修正后，所有人访问同一部署站点即可共享同一份持久化数据。
