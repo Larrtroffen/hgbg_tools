@@ -1,9 +1,10 @@
+import { ref, watch } from 'vue'
 /**
  * 图片生成器表单缓存
- * 使用 localStorage 持久化三个生成器的表单状态，关闭弹窗后再次打开可恢复
+ * 仅使用 localStorage 持久化，避免大 payload（含 base64 图）打爆远程 API（413/超时）
+ * 切换页面和导出时自动保存/读取，不依赖 store.reactive 的远程引擎
  */
 import { addPrefix } from '@/utils'
-import { store } from '@/utils/storage'
 
 export interface CardGeneratorState {
   name: string
@@ -109,11 +110,40 @@ export const CACHE_KEYS = {
   poster: addPrefix('generator_poster'),
 } as const
 
-export function useGeneratorCache() {
-  const cardState = store.reactive<CardGeneratorState>(CACHE_KEYS.card, defaultCard)
-  const coverState = store.reactive<CoverGeneratorState>(CACHE_KEYS.cover, defaultCover)
-  const posterState = store.reactive<PosterGeneratorState>(CACHE_KEYS.poster, defaultPoster)
+function loadFromLocal<T>(key: string, defaultVal: T): T {
+  if (typeof localStorage === 'undefined')
+    return defaultVal
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw)
+      return defaultVal
+    const parsed = JSON.parse(raw) as Partial<T>
+    return { ...defaultVal, ...parsed }
+  }
+  catch {
+    return defaultVal
+  }
+}
 
+function saveToLocal(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  }
+  catch (e) {
+    console.error('[generatorCache] save failed:', key, e)
+  }
+}
+
+// 单例 ref，保证切换 tab 不丢状态
+const cardState = ref<CardGeneratorState>(loadFromLocal(CACHE_KEYS.card, defaultCard))
+const coverState = ref<CoverGeneratorState>(loadFromLocal(CACHE_KEYS.cover, defaultCover))
+const posterState = ref<PosterGeneratorState>(loadFromLocal(CACHE_KEYS.poster, defaultPoster))
+
+watch(cardState, v => saveToLocal(CACHE_KEYS.card, v), { deep: true })
+watch(coverState, v => saveToLocal(CACHE_KEYS.cover, v), { deep: true })
+watch(posterState, v => saveToLocal(CACHE_KEYS.poster, v), { deep: true })
+
+export function useGeneratorCache() {
   return {
     cardState,
     coverState,

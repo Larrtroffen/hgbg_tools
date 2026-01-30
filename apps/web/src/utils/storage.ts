@@ -152,11 +152,18 @@ export class RestfulStorageEngine implements StorageEngine {
     if (token) {
       (headers as Record<string, string>).Authorization = `Bearer ${token}`
     }
-    const response = await fetch(url, {
-      method,
-      headers,
-      body: data ? JSON.stringify(data) : undefined,
-    })
+    let response: Response
+    try {
+      response = await fetch(url, {
+        method,
+        headers,
+        body: data ? JSON.stringify(data) : undefined,
+      })
+    }
+    catch (e) {
+      const msg = (e instanceof Error ? e.message : String(e)) || 'network'
+      throw new Error(`Storage API error: ${msg}`)
+    }
     if (!response.ok) {
       if (response.status === 404) {
         throw new Error('NOT_FOUND')
@@ -170,7 +177,8 @@ export class RestfulStorageEngine implements StorageEngine {
         catch { /* no body */ }
         throw err
       }
-      throw new Error(`Storage API error: ${response.statusText}`)
+      const msg = [response.status, response.statusText].filter(Boolean).join(' ') || 'unknown'
+      throw new Error(`Storage API error: ${msg}`)
     }
     const text = await response.text()
     if (!text || !text.trim()) {

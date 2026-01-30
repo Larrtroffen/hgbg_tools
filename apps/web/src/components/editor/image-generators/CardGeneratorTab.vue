@@ -1,17 +1,11 @@
 <script setup lang="ts">
 import { toPng } from 'html-to-image'
-import { onBeforeUnmount } from 'vue'
 import { useEditorStore } from '@/stores/editor'
-import { CACHE_KEYS, useGeneratorCache } from '@/stores/generatorCache'
+import { useGeneratorCache } from '@/stores/generatorCache'
 import { CARD_COVER_POSTER_FONT_CSS_URL, getGoogleFontEmbedCSS } from '@/utils/export-fonts'
 import { dataUrlToFile, fileUpload } from '@/utils/file'
-import { store } from '@/utils/storage'
 
 const { cardState } = useGeneratorCache()
-
-onBeforeUnmount(() => {
-  store.setJSON(CACHE_KEYS.card, cardState.value).catch(console.error)
-})
 
 const cardIconStyle = { display: 'inline-block', width: '1em', height: '1em', fontSize: '18px', verticalAlign: 'middle', marginTop: '4px', flexShrink: 0 }
 const globeSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" style="width:1em;height:1em"><path d="M352 256c0 22.2-1.2 43.6-3.3 64H163.3c-2.2-20.4-3.3-41.8-3.3-64s1.2-43.6 3.3-64H348.7c2.2 20.4 3.3 41.8 3.3 64zm-89.6 128h-77.1c-26-24.5-45.6-54.4-57.4-87.8c-3.2-9-5.2-18.4-6.1-28H162c.9 9.6 2.9 19 6.1 28c11.8 33.4 31.4 63.3 57.4 87.8zm-117-320h77.1c26 24.5 45.6 54.4 57.4 87.8c3.2 9 5.2 18.4 6.1 28H162c-.9-9.6-2.9-19-6.1-28c-11.8-33.4-31.4-63.3-57.4-87.8zM64 256c0-22.2 1.2-43.6 3.3-64h185.4c2.2 20.4 3.3 41.8 3.3 64s-1.2 43.6-3.3 64H67.3c-2.2-20.4-3.3-41.8-3.3-64zm89.6-128h77.1c-26-24.5-45.6-54.4-57.4-87.8c-3.2-9-5.2-18.4-6.1-28H222c-.9 9.6-2.9 19-6.1 28c-11.8 33.4-31.4 63.3-57.4 87.8zM256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM32 256a224 224 0 1 0 448 0A224 224 0 1 0 32 256z"/></svg>'
@@ -45,12 +39,16 @@ function onAvatarChange(e: Event) {
 async function onExport() {
   if (!cardRef.value)
     return
-  await store.setJSON(CACHE_KEYS.card, cardState.value).catch(console.error)
   isExporting.value = true
   exportBtnText.value = '生成中...'
   try {
     const fontEmbedCSS = await getGoogleFontEmbedCSS(CARD_COVER_POSTER_FONT_CSS_URL)
-    const dataUrl = await toPng(cardRef.value, {
+    const node = cardRef.value
+    if (!node) {
+      toast.error('页面已切换，请重试')
+      return
+    }
+    const dataUrl = await toPng(node, {
       pixelRatio: 2,
       backgroundColor: undefined,
       fontEmbedCSS,

@@ -1,17 +1,11 @@
 <script setup lang="ts">
 import { toPng } from 'html-to-image'
-import { onBeforeUnmount } from 'vue'
 import { useEditorStore } from '@/stores/editor'
-import { CACHE_KEYS, useGeneratorCache } from '@/stores/generatorCache'
+import { useGeneratorCache } from '@/stores/generatorCache'
 import { CARD_COVER_POSTER_FONT_CSS_URL, getGoogleFontEmbedCSS } from '@/utils/export-fonts'
 import { dataUrlToFile, fileUpload } from '@/utils/file'
-import { store } from '@/utils/storage'
 
 const { coverState } = useGeneratorCache()
-
-onBeforeUnmount(() => {
-  store.setJSON(CACHE_KEYS.cover, coverState.value).catch(console.error)
-})
 const editorStore = useEditorStore()
 const coverRef = ref<HTMLElement | null>(null)
 const coverFontFamily = '\'Noto Serif SC\', serif'
@@ -45,12 +39,16 @@ function onRightBgChange(e: Event) {
 async function onExport() {
   if (!coverRef.value)
     return
-  await store.setJSON(CACHE_KEYS.cover, coverState.value).catch(console.error)
   isExporting.value = true
   exportBtnText.value = '生成中...'
   try {
     const fontEmbedCSS = await getGoogleFontEmbedCSS(CARD_COVER_POSTER_FONT_CSS_URL)
-    const dataUrl = await toPng(coverRef.value, {
+    const node = coverRef.value
+    if (!node) {
+      toast.error('页面已切换，请重试')
+      return
+    }
+    const dataUrl = await toPng(node, {
       pixelRatio: 2,
       backgroundColor: undefined,
       fontEmbedCSS,
