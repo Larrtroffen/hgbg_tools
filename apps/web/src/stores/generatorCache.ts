@@ -118,16 +118,16 @@ const DATA_URL_KEYS = [
   'headBgDataUrl',
 ] as const
 
-function stripDataUrls<T extends Record<string, unknown>>(obj: T): T {
-  const out = { ...obj }
+function stripDataUrls<T extends object>(obj: T): T {
+  const out = { ...obj } as Record<string, unknown>
   for (const k of DATA_URL_KEYS) {
     if (k in out)
-      (out as Record<string, unknown>)[k] = ''
+      out[k] = ''
   }
-  return out
+  return out as T
 }
 
-function loadFromLocal<T extends Record<string, unknown>>(key: string, defaultVal: T): T {
+function loadFromLocal<T extends object>(key: string, defaultVal: T): T {
   if (typeof localStorage === 'undefined')
     return defaultVal
   try {
@@ -137,35 +137,42 @@ function loadFromLocal<T extends Record<string, unknown>>(key: string, defaultVa
     const parsed = JSON.parse(raw) as Partial<T>
     const merged = { ...defaultVal, ...parsed }
     for (const k of Object.keys(defaultVal) as (keyof T)[]) {
-      if (merged[k] === undefined)
-        merged[k] = defaultVal[k]
+      if ((merged as Record<string, unknown>)[k as string] === undefined)
+        (merged as Record<string, unknown>)[k as string] = (defaultVal as Record<string, unknown>)[k as string]
     }
-    return merged
+    return merged as unknown as T
   }
   catch {
     return defaultVal
   }
 }
 
-function saveToLocal(key: string, value: unknown) {
+/** 只持久化文字和数字，不写 base64 图，避免超出浏览器 localStorage 配额（约 5–10MB/域名） */
+function saveToLocal(key: string, value: CardGeneratorState | CoverGeneratorState | PosterGeneratorState) {
+  const withoutImages = stripDataUrls(value)
   try {
-    localStorage.setItem(key, JSON.stringify(value))
+    localStorage.setItem(key, JSON.stringify(withoutImages))
   }
-  catch {
-    try {
-      const withoutImages = stripDataUrls(value as Record<string, unknown>)
-      localStorage.setItem(key, JSON.stringify(withoutImages))
+  catch (e2) {
+    if (e2 instanceof DOMException && e2.name === 'QuotaExceededError') {
+      try {
+        Object.values(CACHE_KEYS).forEach(k => localStorage.removeItem(k))
+        localStorage.setItem(key, JSON.stringify(withoutImages))
+      }
+      catch {
+        console.error('[generatorCache] save failed (quota exceeded, clear retry failed):', key, e2)
+      }
     }
-    catch (e2) {
+    else {
       console.error('[generatorCache] save failed:', key, e2)
     }
   }
 }
 
-// 单例 ref(reactive(...))：保证深层属性变更触发 watch，切换 tab 不丢状态
-const cardState = ref(reactive(loadFromLocal(CACHE_KEYS.card, defaultCard)) as CardGeneratorState)
-const coverState = ref(reactive(loadFromLocal(CACHE_KEYS.cover, defaultCover)) as CoverGeneratorState)
-const posterState = ref(reactive(loadFromLocal(CACHE_KEYS.poster, defaultPoster)) as PosterGeneratorState)
+// 单例 ref(reactive(...))：保证深层属性变更触发 watch，切换 tab 不丢状态（显式断言满足 reactive 的索引签名约束）
+const cardState = ref(reactive(loadFromLocal(CACHE_KEYS.card, defaultCard) as unknown as Record<string, unknown>) as unknown as CardGeneratorState)
+const coverState = ref(reactive(loadFromLocal(CACHE_KEYS.cover, defaultCover) as unknown as Record<string, unknown>) as unknown as CoverGeneratorState)
+const posterState = ref(reactive(loadFromLocal(CACHE_KEYS.poster, defaultPoster) as unknown as Record<string, unknown>) as unknown as PosterGeneratorState)
 
 watch(cardState, v => saveToLocal(CACHE_KEYS.card, v), { deep: true })
 watch(coverState, v => saveToLocal(CACHE_KEYS.cover, v), { deep: true })
