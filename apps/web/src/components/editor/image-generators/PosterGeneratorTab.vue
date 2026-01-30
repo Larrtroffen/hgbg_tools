@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { toPng } from 'html-to-image'
+import { onBeforeUnmount } from 'vue'
 import { useEditorStore } from '@/stores/editor'
-import { useGeneratorCache } from '@/stores/generatorCache'
+import { CACHE_KEYS, useGeneratorCache } from '@/stores/generatorCache'
 import { CARD_COVER_POSTER_FONT_CSS_URL, getGoogleFontEmbedCSS } from '@/utils/export-fonts'
 import { dataUrlToFile, fileUpload } from '@/utils/file'
+import { store } from '@/utils/storage'
 
 const { posterState } = useGeneratorCache()
+
+onBeforeUnmount(() => {
+  store.setJSON(CACHE_KEYS.poster, posterState.value).catch(console.error)
+})
 const editorStore = useEditorStore()
 const posterRef = ref<HTMLElement | null>(null)
 const isExporting = ref(false)
@@ -64,6 +70,7 @@ function onImageChange(e: Event) {
 async function onExport() {
   if (!posterRef.value)
     return
+  await store.setJSON(CACHE_KEYS.poster, posterState.value).catch(console.error)
   isExporting.value = true
   exportBtnText.value = '生成中...'
   try {

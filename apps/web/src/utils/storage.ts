@@ -413,6 +413,11 @@ class StorageManager {
    * - 自动监听变化并保存到存储；远程引擎支持 refreshKey 拉取最新
    */
   reactive<T>(key: string, defaultValue: T): Ref<T> {
+    // 同一 key 始终返回同一 ref，避免切换 tab/页面时重新创建导致状态回退到默认
+    const existing = this.reactiveMeta.get(key)
+    if (existing)
+      return existing.ref as Ref<T>
+
     const isStringType = typeof defaultValue === `string`
     let initialValue: T = defaultValue
 
