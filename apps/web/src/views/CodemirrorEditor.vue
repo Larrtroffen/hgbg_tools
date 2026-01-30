@@ -488,9 +488,10 @@ const editorRef = useTemplateRef<HTMLDivElement>(`editorRef`)
 const progressValue = ref(0)
 
 function createFormTextArea(dom: HTMLDivElement) {
-  // 创建编辑器状态
+  const post = posts.value[currentPostIndex.value]
+  const initialDoc = post?.content ?? ''
   const state = EditorState.create({
-    doc: posts.value[currentPostIndex.value].content,
+    doc: initialDoc,
     extensions: [
       markdownSetup({
         onSearch: openSearchWithSelection,
@@ -505,9 +506,10 @@ function createFormTextArea(dom: HTMLDivElement) {
             editorRefresh()
 
             const currentPost = posts.value[currentPostIndex.value]
-            if (value === currentPost.content) {
+            if (!currentPost)
               return
-            }
+            if (value === currentPost.content)
+              return
 
             currentPost.updateDatetime = new Date()
             currentPost.content = value
@@ -656,22 +658,20 @@ watch(
 // 历史记录的定时器
 const historyTimer = ref<NodeJS.Timeout>()
 onMounted(() => {
-  // 定时，30 秒记录一次文章的历史记录
   historyTimer.value = setInterval(() => {
     const currentPost = posts.value[currentPostIndex.value]
-
-    // 与最后一篇记录对比
-    const pre = (currentPost.history || [])[0]?.content
-    if (pre === currentPost.content) {
+    if (!currentPost)
       return
-    }
+
+    const pre = (currentPost.history || [])[0]?.content
+    if (pre === currentPost.content)
+      return
 
     currentPost.history ??= []
     currentPost.history.unshift({
       content: currentPost.content,
       datetime: new Date().toLocaleString(`zh-CN`),
     })
-
     currentPost.history.length = Math.min(currentPost.history.length, 10)
   }, 30 * 1000)
 })
