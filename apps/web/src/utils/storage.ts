@@ -264,8 +264,8 @@ export class RestfulStorageEngine implements StorageEngine {
   }
 }
 
-/** 远程引擎下防抖保存的毫秒数，减少多端并发写入与请求风暴 */
-const SAVE_DEBOUNCE_MS = 800
+/** 远程引擎下防抖保存的毫秒数，与应用中版本历史更新间隔一致，降低 409 与请求堆积 */
+const SAVE_DEBOUNCE_MS = 30 * 1000
 
 /**
  * 统一存储管理器
