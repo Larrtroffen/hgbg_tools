@@ -31,8 +31,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Missing key' })
       }
       const value = typeof req.body?.value === 'string' ? req.body.value : (req.body?.value != null ? JSON.stringify(req.body.value) : '')
+      const ifMatch = req.body?.ifMatch as number | undefined
+      const versionKey = `${key}__v`
+      const currentVersion = Number.parseInt(String(await redis.get(versionKey) ?? 0), 10) || 0
+      if (ifMatch !== undefined && ifMatch !== null && currentVersion !== ifMatch) {
+        return res.status(409).json({ error: 'Conflict', version: currentVersion })
+      }
       await redis.set(key, value)
-      return res.status(200).json({ ok: true })
+      const newVersion = currentVersion + 1
+      await redis.set(versionKey, String(newVersion))
+      return res.status(200).json({ ok: true, version: newVersion })
     }
 
     if (req.method !== 'DELETE') {

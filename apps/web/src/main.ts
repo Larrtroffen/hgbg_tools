@@ -38,6 +38,21 @@ async function bootstrap() {
   ]).then(() => {})
   await Promise.race([load, timeout])
   app.mount(`#app`)
+
+  // 多端同步：切回标签页且曾隐藏超过 2s 时拉取最新（参考 Remote Save 的可见性刷新，减少误覆盖本地未保存编辑）
+  let hiddenAt: number | null = null
+  document.addEventListener(`visibilitychange`, () => {
+    if (document.visibilityState === `hidden`) {
+      hiddenAt = Date.now()
+      return
+    }
+    if (document.visibilityState !== `visible` || hiddenAt == null)
+      return
+    if (Date.now() - hiddenAt < 2000)
+      return
+    store.refreshKey(addPrefix(`posts`)).catch(console.error)
+    store.refreshKey(addPrefix(`current_post_id`)).catch(console.error)
+  })
 }
 
 bootstrap().catch(() => {

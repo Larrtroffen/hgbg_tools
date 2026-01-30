@@ -36,7 +36,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (value === null || value === undefined) {
             return res.status(404).json({ error: 'Not found' })
           }
-          return res.status(200).json({ value: typeof value === 'string' ? value : JSON.stringify(value) })
+          const versionKey = `${key}__v`
+          const version = Number.parseInt(String(await redis.get(versionKey) ?? 0), 10) || 0
+          return res.status(200).json({
+            value: typeof value === 'string' ? value : JSON.stringify(value),
+            version,
+          })
         }
         catch (error) {
           console.error('[storage/get]', error)
@@ -61,6 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'DELETE': {
         try {
           await redis.del(key)
+          await redis.del(`${key}__v`)
           return res.status(200).json({ ok: true })
         }
         catch (error) {
