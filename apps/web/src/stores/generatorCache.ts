@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 /**
  * 图片生成器表单缓存
  * 仅使用 localStorage 持久化，避免大 payload（含 base64 图）打爆远程 API（413/超时）
@@ -110,7 +110,24 @@ export const CACHE_KEYS = {
   poster: addPrefix('generator_poster'),
 } as const
 
-function loadFromLocal<T>(key: string, defaultVal: T): T {
+const DATA_URL_KEYS = [
+  'avatarDataUrl',
+  'leftBgDataUrl',
+  'rightBgDataUrl',
+  'imageDataUrl',
+  'headBgDataUrl',
+] as const
+
+function stripDataUrls<T extends Record<string, unknown>>(obj: T): T {
+  const out = { ...obj }
+  for (const k of DATA_URL_KEYS) {
+    if (k in out)
+      (out as Record<string, unknown>)[k] = ''
+  }
+  return out
+}
+
+function loadFromLocal<T extends Record<string, unknown>>(key: string, defaultVal: T): T {
   if (typeof localStorage === 'undefined')
     return defaultVal
   try {
@@ -118,7 +135,12 @@ function loadFromLocal<T>(key: string, defaultVal: T): T {
     if (!raw)
       return defaultVal
     const parsed = JSON.parse(raw) as Partial<T>
-    return { ...defaultVal, ...parsed }
+    const merged = { ...defaultVal, ...parsed }
+    for (const k of Object.keys(defaultVal) as (keyof T)[]) {
+      if (merged[k] === undefined)
+        merged[k] = defaultVal[k]
+    }
+    return merged
   }
   catch {
     return defaultVal
@@ -129,15 +151,21 @@ function saveToLocal(key: string, value: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(value))
   }
-  catch (e) {
-    console.error('[generatorCache] save failed:', key, e)
+  catch {
+    try {
+      const withoutImages = stripDataUrls(value as Record<string, unknown>)
+      localStorage.setItem(key, JSON.stringify(withoutImages))
+    }
+    catch (e2) {
+      console.error('[generatorCache] save failed:', key, e2)
+    }
   }
 }
 
-// 单例 ref，保证切换 tab 不丢状态
-const cardState = ref<CardGeneratorState>(loadFromLocal(CACHE_KEYS.card, defaultCard))
-const coverState = ref<CoverGeneratorState>(loadFromLocal(CACHE_KEYS.cover, defaultCover))
-const posterState = ref<PosterGeneratorState>(loadFromLocal(CACHE_KEYS.poster, defaultPoster))
+// 单例 ref(reactive(...))：保证深层属性变更触发 watch，切换 tab 不丢状态
+const cardState = ref(reactive(loadFromLocal(CACHE_KEYS.card, defaultCard)) as CardGeneratorState)
+const coverState = ref(reactive(loadFromLocal(CACHE_KEYS.cover, defaultCover)) as CoverGeneratorState)
+const posterState = ref(reactive(loadFromLocal(CACHE_KEYS.poster, defaultPoster)) as PosterGeneratorState)
 
 watch(cardState, v => saveToLocal(CACHE_KEYS.card, v), { deep: true })
 watch(coverState, v => saveToLocal(CACHE_KEYS.cover, v), { deep: true })
