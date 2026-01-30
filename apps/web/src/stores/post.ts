@@ -195,6 +195,7 @@ export const usePostStore = defineStore(`post`, () => {
     findIndexById,
 
     // Actions
+    ensureCurrentPostId,
     addPost,
     addPostWithContent,
     renamePost,

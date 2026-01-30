@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
-
 import { Compartment, EditorState } from '@codemirror/state'
+
 import { EditorView } from '@codemirror/view'
 import { highlightPendingBlocks, hljs } from '@md/core'
 import { markdownSetup, theme } from '@md/shared/editor'
 import imageCompression from 'browser-image-compression'
 import { Eye, Pen } from 'lucide-vue-next'
+import { unref } from 'vue'
 import { SidebarAIToolbar } from '@/components/ai'
 import FolderSourcePanel from '@/components/editor/FolderSourcePanel.vue'
 import {
@@ -504,15 +505,16 @@ function createFormTextArea(dom: HTMLDivElement) {
           clearTimeout(changeTimer.value)
           changeTimer.value = setTimeout(() => {
             editorRefresh()
-
-            const currentPost = posts.value[currentPostIndex.value]
-            if (!currentPost)
+            // 用 id 更新，避免 currentPostIndex 为 -1 时丢失编辑
+            if (!currentPost.value)
+              postStore.ensureCurrentPostId()
+            const id = unref(postStore.currentPostId)
+            if (!id)
               return
-            if (value === currentPost.content)
+            const post = postStore.getPostById(id)
+            if (value === post?.content)
               return
-
-            currentPost.updateDatetime = new Date()
-            currentPost.content = value
+            postStore.updatePostContent(id, value)
           }, 300)
         }
       }),
@@ -659,27 +661,31 @@ watch(
 const historyTimer = ref<NodeJS.Timeout>()
 onMounted(() => {
   historyTimer.value = setInterval(() => {
-    const currentPost = posts.value[currentPostIndex.value]
-    if (!currentPost)
+    if (!currentPost.value)
+      postStore.ensureCurrentPostId()
+    const id = unref(postStore.currentPostId)
+    const post = postStore.getPostById(id)
+    if (!post)
       return
 
-    const pre = (currentPost.history || [])[0]?.content
-    if (pre === currentPost.content)
+    const pre = (post.history || [])[0]?.content
+    if (pre === post.content)
       return
 
-    currentPost.history ??= []
-    currentPost.history.unshift({
-      content: currentPost.content,
+    post.history ??= []
+    post.history.unshift({
+      content: post.content,
       datetime: new Date().toLocaleString(`zh-CN`),
     })
-    currentPost.history.length = Math.min(currentPost.history.length, 10)
+    post.history.length = Math.min(post.history.length, 10)
   }, 30 * 1000)
 })
 
 // 销毁时清理定时器和全局事件监听器
 onUnmounted(() => {
   // 清理定时器 - 防止回调访问已销毁的DOM
-  clearTimeout(historyTimer.value)
+  if (historyTimer.value != null)
+    clearInterval(historyTimer.value)
   clearTimeout(timeout.value)
   clearTimeout(changeTimer.value)
 
