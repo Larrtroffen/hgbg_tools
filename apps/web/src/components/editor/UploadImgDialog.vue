@@ -2,6 +2,7 @@
 import { toTypedSchema } from '@vee-validate/yup'
 import { UploadCloud } from 'lucide-vue-next'
 import { Field, Form } from 'vee-validate'
+import { onMounted } from 'vue'
 import * as yup from 'yup'
 import { useUIStore } from '@/stores/ui'
 import { checkImage } from '@/utils'
@@ -57,6 +58,15 @@ const txCOSSchema = toTypedSchema(yup.object({
   secretKey: yup.string().required(`Secret Key 不能为空`),
   bucket: yup.string().required(`Bucket 不能为空`),
   region: yup.string().required(`Region 不能为空`),
+  cdnHost: yup.string().optional(),
+  path: yup.string().optional(),
+}))
+/** 服务端已配置时，表单为可选（仅用于本地覆盖） */
+const txCOSSchemaOptional = toTypedSchema(yup.object({
+  secretId: yup.string().optional(),
+  secretKey: yup.string().optional(),
+  bucket: yup.string().optional(),
+  region: yup.string().optional(),
   cdnHost: yup.string().optional(),
   path: yup.string().optional(),
 }))
@@ -351,6 +361,30 @@ async function changeCompression() {
   // reactive 会自动保存，不需要手动操作
 }
 
+// 腾讯云：服务端是否已通过环境变量配置（GET /api/upload/cos）
+const txCOSServerConfigured = ref<boolean | null>(null)
+const txCOSServerInfo = ref<{ region?: string, bucket?: string }>({})
+
+async function fetchTxCOSStatus() {
+  if (txCOSServerConfigured.value !== null)
+    return
+  try {
+    const base = typeof window !== 'undefined' ? window.location.origin : ''
+    const res = await fetch(`${base}/api/upload/cos`, { method: 'GET' })
+    const data = await res.json().catch(() => ({}))
+    txCOSServerConfigured.value = !!data?.configured
+    if (data?.configured)
+      txCOSServerInfo.value = { region: data.region, bucket: data.bucket }
+  }
+  catch {
+    txCOSServerConfigured.value = false
+  }
+}
+
+onMounted(() => {
+  fetchTxCOSStatus()
+})
+
 async function beforeImageUpload(file: File) {
   // check image
   const checkResult = checkImage(file)
@@ -361,8 +395,12 @@ async function beforeImageUpload(file: File) {
   // check image host
   const imgHostValue = imgHost.value || `default`
 
+  if (imgHostValue === 'txCOS')
+    await fetchTxCOSStatus()
+
   const config = await store.get(`${imgHostValue}Config`)
-  const isValidHost = imgHostValue === `default` || config
+  const hasTxCOSServer = imgHostValue === 'txCOS' && txCOSServerConfigured.value === true
+  const isValidHost = imgHostValue === 'default' || hasTxCOSServer || config
   if (!isValidHost) {
     toast.error(`请先配置 ${imgHostValue} 图床参数`)
     return false
@@ -662,44 +700,50 @@ function onTabScroll(e: WheelEvent) {
         </TabsContent>
 
         <TabsContent value="txCOS" class="flex-1 overflow-y-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <Form :validation-schema="txCOSSchema" :initial-values="txCOSConfig" @submit="txCOSSubmit">
+          <div v-if="txCOSServerConfigured === true" class="mb-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-800 dark:bg-green-950/40 dark:text-green-200">
+            腾讯云已通过服务端环境变量配置，上传将直接使用，无需填写下方密钥。
+            <span v-if="txCOSServerInfo.region || txCOSServerInfo.bucket" class="mt-1 block text-green-700 dark:text-green-300">
+              Region: {{ txCOSServerInfo.region || '—' }}，Bucket: {{ txCOSServerInfo.bucket || '—' }}
+            </span>
+          </div>
+          <Form :validation-schema="txCOSServerConfigured ? txCOSSchemaOptional : txCOSSchema" :initial-values="txCOSConfig" @submit="txCOSSubmit">
             <Field v-slot="{ field, errorMessage }" name="secretId">
-              <FormItem label="SecretId" required :error="errorMessage">
+              <FormItem label="SecretId" :required="!txCOSServerConfigured" :error="errorMessage">
                 <Input
                   v-bind="field"
                   v-model="field.value"
-                  placeholder="如：AKIDnQp1w3DOOCSs8F5MDp9tdoocsmdUPonW3"
+                  :placeholder="txCOSServerConfigured ? '已通过环境变量配置，可不填' : '如：AKIDnQp1w3DOOCSs8F5MDp9tdoocsmdUPonW3'"
                 />
               </FormItem>
             </Field>
 
             <Field v-slot="{ field, errorMessage }" name="secretKey">
-              <FormItem label="SecretKey" required :error="errorMessage">
+              <FormItem label="SecretKey" :required="!txCOSServerConfigured" :error="errorMessage">
                 <Input
                   v-bind="field"
                   v-model="field.value"
                   type="password"
-                  placeholder="如：ukLmdtEJ9271f3DOocsMDsCXdS3YlbW0"
+                  :placeholder="txCOSServerConfigured ? '已通过环境变量配置，可不填' : '如：ukLmdtEJ9271f3DOocsMDsCXdS3YlbW0'"
                 />
               </FormItem>
             </Field>
 
             <Field v-slot="{ field, errorMessage }" name="bucket">
-              <FormItem label="Bucket" required :error="errorMessage">
+              <FormItem label="Bucket" :required="!txCOSServerConfigured" :error="errorMessage">
                 <Input
                   v-bind="field"
                   v-model="field.value"
-                  placeholder="如：doocs-3212520134"
+                  :placeholder="txCOSServerConfigured ? '已通过环境变量配置，可不填' : '如：doocs-3212520134'"
                 />
               </FormItem>
             </Field>
 
             <Field v-slot="{ field, errorMessage }" name="region">
-              <FormItem label="Bucket 所在区域" required :error="errorMessage">
+              <FormItem label="Bucket 所在区域" :required="!txCOSServerConfigured" :error="errorMessage">
                 <Input
                   v-bind="field"
                   v-model="field.value"
-                  placeholder="如：ap-guangzhou"
+                  :placeholder="txCOSServerConfigured ? '已通过环境变量配置，可不填' : '如：ap-guangzhou'"
                 />
               </FormItem>
             </Field>

@@ -71,17 +71,25 @@ function parseMultipartFile(req: VercelRequest): Promise<{ buffer: Buffer, filen
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST')
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
-
   const secretId = process.env.TENCENT_COS_SECRET_ID
   const secretKey = process.env.TENCENT_COS_SECRET_KEY
   const bucket = process.env.TENCENT_COS_BUCKET
   const region = process.env.TENCENT_COS_REGION
+  const configured = !!(secretId && secretKey && bucket && region)
 
-  if (!secretId || !secretKey || !bucket || !region) {
+  if (req.method === 'GET') {
+    return res.status(200).json({
+      configured,
+      ...(configured ? { region, bucket } : {}),
+    })
+  }
+
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'GET, POST')
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  if (!configured) {
     return res.status(501).json({
       error: 'COS not configured',
       message: 'Set TENCENT_COS_SECRET_ID, TENCENT_COS_SECRET_KEY, TENCENT_COS_BUCKET, TENCENT_COS_REGION in Vercel env',

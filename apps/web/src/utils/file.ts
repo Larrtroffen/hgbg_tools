@@ -296,7 +296,27 @@ const defaultTxCOSConfig = {
   cdnHost: ``,
 }
 
+/** 服务端是否已配置腾讯云 COS（环境变量），缓存避免每次上传都请求 */
+let cosServerConfigured: boolean | null = null
+
 async function txCOSFileUpload(file: File) {
+  if (typeof window !== 'undefined') {
+    if (cosServerConfigured === null) {
+      try {
+        const base = window.location.origin
+        const res = await window.fetch(`${base}/api/upload/cos`, { method: 'GET' })
+        const data = await res.json().catch(() => ({}))
+        cosServerConfigured = !!data?.configured
+      }
+      catch {
+        cosServerConfigured = false
+      }
+    }
+    if (cosServerConfigured) {
+      return remoteTxCOSFileUpload(file)
+    }
+  }
+
   const useRemoteStorage = typeof import.meta !== 'undefined' && import.meta.env?.VITE_USE_REMOTE_STORAGE === 'true'
   if (useRemoteStorage) {
     return remoteTxCOSFileUpload(file)
