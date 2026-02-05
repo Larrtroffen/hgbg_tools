@@ -44,8 +44,9 @@ async function bootstrap() {
     store.flushReactiveKeys([addPrefix(`posts`), addPrefix(`current_post_id`)])
   })
 
-  // 多端同步：切回标签页且曾隐藏超过 2s 时拉取最新（参考 Remote Save 的可见性刷新，减少误覆盖本地未保存编辑）
+  // 多端同步：切回标签页且曾隐藏超过 2s 时拉取最新；防抖 400ms 避免快速切换触发；refreshKeys 先 flush 再串行拉取，避免 POST/GET 交错导致 409
   let hiddenAt: number | null = null
+  let refreshTimer: ReturnType<typeof setTimeout> | null = null
   document.addEventListener(`visibilitychange`, () => {
     if (document.visibilityState === `hidden`) {
       hiddenAt = Date.now()
@@ -55,8 +56,12 @@ async function bootstrap() {
       return
     if (Date.now() - hiddenAt < 2000)
       return
-    store.refreshKey(addPrefix(`posts`)).catch(console.error)
-    store.refreshKey(addPrefix(`current_post_id`)).catch(console.error)
+    if (refreshTimer)
+      clearTimeout(refreshTimer)
+    refreshTimer = setTimeout(() => {
+      refreshTimer = null
+      store.refreshKeys([addPrefix(`posts`), addPrefix(`current_post_id`)]).catch(console.error)
+    }, 400)
   })
 }
 

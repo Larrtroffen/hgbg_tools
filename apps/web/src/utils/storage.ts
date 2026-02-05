@@ -297,7 +297,7 @@ const SAVE_DEBOUNCE_MS = 30 * 1000
  */
 class StorageManager {
   private engine: StorageEngine = new LocalStorageEngine()
-  /** 用于 visibility 拉取时更新 reactive 的 ref，避免刷新触发误保存；可选版本号用于冲突时拉取最新；flush 用于 refresh 前立即保存 */
+  /** 用于 visibility 拉取时更新 reactive 的 ref；flush 用于 refresh 前立即保存；lastRefreshedValue 用于避免刷新触发的冗余 save 导致 409 */
   private reactiveMeta = new Map<string, {
     ref: Ref<unknown>
     isString: boolean
@@ -305,6 +305,7 @@ class StorageManager {
     getVersion?: () => number
     setVersion?: (v: number) => void
     flush?: () => Promise<void>
+    lastRefreshedValue?: unknown
   }>()
 
   /**
@@ -405,14 +406,25 @@ class StorageManager {
   }
 
   /**
-   * 从远程拉取指定 key 并更新已注册的 reactive ref（多端/可见性恢复时同步最新）
-   * 拉取前先 flush 待保存数据，避免本地未上传编辑被远程旧数据覆盖
+   * 批量刷新：先 flush 所有 key，延迟后串行拉取，避免 POST/GET 交错导致 409
    */
-  async refreshKey(key: string): Promise<void> {
+  async refreshKeys(keys: string[]): Promise<void> {
+    await Promise.all(keys.map(k => this.reactiveMeta.get(k)?.flush?.() ?? Promise.resolve()))
+    await new Promise(r => setTimeout(r, 150))
+    for (const key of keys)
+      await this.refreshKey(key, { skipFlush: true })
+  }
+
+  /**
+   * 从远程拉取指定 key 并更新已注册的 reactive ref
+   * @param skipFlush 由 refreshKeys 调用时传入，避免重复 flush
+   */
+  async refreshKey(key: string, opts?: { skipFlush?: boolean }): Promise<void> {
     const meta = this.reactiveMeta.get(key)
     if (!meta)
       return
-    await meta.flush?.()
+    if (!opts?.skipFlush)
+      await meta.flush?.()
     meta.setRefreshing(true)
     try {
       const eng = this.engine as VersionedStorageEngine
@@ -431,6 +443,7 @@ class StorageManager {
               }
             })()
         ;(meta.ref as Ref<unknown>).value = parsed
+        meta.lastRefreshedValue = parsed
         if (result.version != null && meta.setVersion)
           meta.setVersion(result.version)
       }
@@ -518,6 +531,9 @@ class StorageManager {
     if (!isLocal) {
       saveWithFlush = debounceWithFlush(async (value: T) => {
         if (!initialLoadDone || isRefreshing)
+          return
+        const m = this.reactiveMeta.get(key)
+        if (m?.lastRefreshedValue !== undefined && JSON.stringify(value) === JSON.stringify(m.lastRefreshedValue))
           return
         await doSave(value)
       }, SAVE_DEBOUNCE_MS)
