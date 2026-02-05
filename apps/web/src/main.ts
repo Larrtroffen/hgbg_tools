@@ -39,6 +39,11 @@ async function bootstrap() {
   await Promise.race([load, timeout])
   app.mount(`#app`)
 
+  // 页面关闭前强制保存，减少未上传编辑丢失
+  window.addEventListener(`beforeunload`, () => {
+    store.flushReactiveKeys([addPrefix(`posts`), addPrefix(`current_post_id`)])
+  })
+
   // 多端同步：切回标签页且曾隐藏超过 2s 时拉取最新（参考 Remote Save 的可见性刷新，减少误覆盖本地未保存编辑）
   let hiddenAt: number | null = null
   document.addEventListener(`visibilitychange`, () => {

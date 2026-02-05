@@ -31,16 +31,32 @@ export interface VersionedStorageEngine extends StorageEngine {
   setWithVersion?: (key: string, value: string, ifMatch?: number) => Promise<{ version: number } | void>
 }
 
-function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
+/** 带 flush 的防抖：refreshKey/页面关闭前可立即执行待保存 */
+function debounceWithFlush<T extends (...args: any[]) => any>(fn: T, ms: number): T & { flush: () => Promise<void> } {
   let timer: ReturnType<typeof setTimeout> | null = null
-  return ((...args: Parameters<T>) => {
+  let lastArgs: Parameters<T> | null = null
+  const debounced = ((...args: Parameters<T>) => {
+    lastArgs = args
     if (timer)
       clearTimeout(timer)
     timer = setTimeout(() => {
       timer = null
-      fn(...args)
+      const a = lastArgs
+      lastArgs = null
+      if (a)
+        void fn(...a)
     }, ms)
-  }) as T
+  }) as T & { flush: () => Promise<void> }
+  debounced.flush = async () => {
+    if (timer && lastArgs) {
+      clearTimeout(timer)
+      timer = null
+      const a = lastArgs
+      lastArgs = null
+      await fn(...a)
+    }
+  }
+  return debounced
 }
 
 async function retryWithBackoff<T>(
@@ -281,13 +297,14 @@ const SAVE_DEBOUNCE_MS = 30 * 1000
  */
 class StorageManager {
   private engine: StorageEngine = new LocalStorageEngine()
-  /** 用于 visibility 拉取时更新 reactive 的 ref，避免刷新触发误保存；可选版本号用于冲突时拉取最新 */
+  /** 用于 visibility 拉取时更新 reactive 的 ref，避免刷新触发误保存；可选版本号用于冲突时拉取最新；flush 用于 refresh 前立即保存 */
   private reactiveMeta = new Map<string, {
     ref: Ref<unknown>
     isString: boolean
     setRefreshing: (v: boolean) => void
     getVersion?: () => number
     setVersion?: (v: number) => void
+    flush?: () => Promise<void>
   }>()
 
   /**
@@ -381,12 +398,21 @@ class StorageManager {
   }
 
   /**
+   * 立即执行指定 keys 的待保存（用于 beforeunload 等场景，避免关闭页面丢失未上传编辑）
+   */
+  async flushReactiveKeys(keys: string[]): Promise<void> {
+    await Promise.all(keys.map(k => this.reactiveMeta.get(k)?.flush?.() ?? Promise.resolve()))
+  }
+
+  /**
    * 从远程拉取指定 key 并更新已注册的 reactive ref（多端/可见性恢复时同步最新）
+   * 拉取前先 flush 待保存数据，避免本地未上传编辑被远程旧数据覆盖
    */
   async refreshKey(key: string): Promise<void> {
     const meta = this.reactiveMeta.get(key)
     if (!meta)
       return
+    await meta.flush?.()
     meta.setRefreshing(true)
     try {
       const eng = this.engine as VersionedStorageEngine
@@ -446,6 +472,7 @@ class StorageManager {
 
     // 远程引擎：首次拉取完成前禁止保存；刷新时禁止保存，避免覆盖刚拉取的数据；可选版本号用于冲突时拉取最新
     const isLocal = this.engine instanceof LocalStorageEngine
+    let saveWithFlush: (((value: T) => void) & { flush: () => Promise<void> }) | undefined
     const versioned = !isLocal && !!(this.engine as VersionedStorageEngine).getWithVersion && !!(this.engine as VersionedStorageEngine).setWithVersion
     let initialLoadDone = isLocal
     let isRefreshing = false
@@ -453,32 +480,6 @@ class StorageManager {
     let lastVersion = 0
     const getVersion = () => lastVersion
     const setVersion = (v: number) => { lastVersion = v }
-
-    if (!isLocal) {
-      this.reactiveMeta.set(key, {
-        ref: data as Ref<unknown>,
-        isString: isStringType,
-        setRefreshing,
-        ...(versioned ? { getVersion, setVersion } : {}),
-      })
-      const eng = this.engine as VersionedStorageEngine
-      const loadAsync = versioned && eng.getWithVersion
-        ? eng.getWithVersion(key).then((r) => {
-            if (r.version != null)
-              setVersion(r.version)
-            return r.value !== null ? (isStringType ? r.value as T : this.parseJSON(r.value!, defaultValue) as T) : null
-          })
-        : isStringType
-          ? this.get(key).then(value => value !== null ? (value as T) : null)
-          : this.getJSON<T>(key, defaultValue)
-
-      loadAsync.then((value) => {
-        if (value !== null) {
-          data.value = value
-        }
-        initialLoadDone = true
-      })
-    }
 
     const doSave = async (value: T) => {
       const eng = this.engine as VersionedStorageEngine
@@ -514,13 +515,41 @@ class StorageManager {
       }
     }
 
+    if (!isLocal) {
+      saveWithFlush = debounceWithFlush(async (value: T) => {
+        if (!initialLoadDone || isRefreshing)
+          return
+        await doSave(value)
+      }, SAVE_DEBOUNCE_MS)
+      this.reactiveMeta.set(key, {
+        ref: data as Ref<unknown>,
+        isString: isStringType,
+        setRefreshing,
+        flush: saveWithFlush.flush,
+        ...(versioned ? { getVersion, setVersion } : {}),
+      })
+      const eng = this.engine as VersionedStorageEngine
+      const loadAsync = versioned && eng.getWithVersion
+        ? eng.getWithVersion(key).then((r) => {
+            if (r.version != null)
+              setVersion(r.version)
+            return r.value !== null ? (isStringType ? r.value as T : this.parseJSON(r.value!, defaultValue) as T) : null
+          })
+        : isStringType
+          ? this.get(key).then(value => value !== null ? (value as T) : null)
+          : this.getJSON<T>(key, defaultValue)
+
+      loadAsync.then((value) => {
+        if (value !== null) {
+          data.value = value
+        }
+        initialLoadDone = true
+      })
+    }
+
     const save = isLocal
-      ? (value: T) => { doSave(value) }
-      : debounce((value: T) => {
-          if (!initialLoadDone || isRefreshing)
-            return
-          doSave(value)
-        }, SAVE_DEBOUNCE_MS)
+      ? (value: T) => { void doSave(value) }
+      : saveWithFlush!
 
     // 监听变化并自动保存（远程引擎：防抖 + 刷新期间不写回）
     Promise.resolve().then(() => {
